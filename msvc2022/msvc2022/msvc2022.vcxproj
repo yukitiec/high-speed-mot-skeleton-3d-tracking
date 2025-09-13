@@ -75,7 +75,8 @@
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NOMINMAX;CMAKE_INTDIR="Debug";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
-      <ForcedUsingFiles>stdafx.h</ForcedUsingFiles>
+      <ForcedUsingFiles>include/stdafx.h</ForcedUsingFiles>
+      <PrecompiledHeaderFile>include/stdafx.h</PrecompiledHeaderFile>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;NOMINMAX;CMAKE_INTDIR=\"Debug\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -176,9 +177,57 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\3d\sequence.h" />
+    <ClInclude Include="..\include\3d\triangulation.h" />
+    <ClInclude Include="..\include\3d\triangulation_skeleton.h" />
+    <ClInclude Include="..\include\detector\yolo_batch.h" />
+    <ClInclude Include="..\include\detector\yolo_batch_skeleton.h" />
+    <ClInclude Include="..\include\global_parameters_mot.h" />
+    <ClInclude Include="..\include\global_parameters_skeleton.h" />
+    <ClInclude Include="..\include\mot_skeleton.h" />
+    <ClInclude Include="..\include\stdafx.h" />
+    <ClInclude Include="..\include\tracking\mosse.h" />
+    <ClInclude Include="..\include\tracking\optflow.h" />
+    <ClInclude Include="..\include\tracking\template_matching.h" />
+    <ClInclude Include="..\include\tracking\tracker.h" />
+    <ClInclude Include="..\include\utils\buffer_skeleton.h" />
+    <ClInclude Include="..\include\utils\hungarian.h" />
+    <ClInclude Include="..\include\utils\kalmanfilter.h" />
+    <ClInclude Include="..\include\utils\kalmanfilter_3d.h" />
+    <ClInclude Include="..\include\utils\kalmanfilter_skeleton.h" />
+    <ClInclude Include="..\include\utils\matching.h" />
+    <ClInclude Include="..\include\utils\matching_skeleton.h" />
+    <ClInclude Include="..\include\utils\prediction.h" />
+    <ClInclude Include="..\include\utils\utility.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="example-app.cpp" />
+    <ClCompile Include="..\src\3d\sequence.cpp" />
+    <ClCompile Include="..\src\3d\triangulation.cpp" />
+    <ClCompile Include="..\src\3d\triangulation_skeleton.cpp" />
+    <ClCompile Include="..\src\detector\yolo_batch.cpp" />
+    <ClCompile Include="..\src\detector\yolo_batch_skeleton.cpp" />
+    <ClCompile Include="..\src\global_parameters_skeleton.cpp" />
+    <ClCompile Include="..\src\stdafx.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\src\tracking\mosse.cpp" />
+    <ClCompile Include="..\src\tracking\optflow.cpp" />
+    <ClCompile Include="..\src\tracking\template_matching.cpp" />
+    <ClCompile Include="..\src\tracking\tracker.cpp" />
+    <ClCompile Include="..\src\utils\buffer_skeleton.cpp" />
+    <ClCompile Include="..\src\utils\hungarian.cpp" />
+    <ClCompile Include="..\src\utils\kalmanfilter.cpp" />
+    <ClCompile Include="..\src\utils\kalmanfilter_3d.cpp" />
+    <ClCompile Include="..\src\utils\kalmanfilter_skeleton.cpp" />
+    <ClCompile Include="..\src\utils\matching.cpp" />
+    <ClCompile Include="..\src\utils\matching_skeleton.cpp" />
+    <ClCompile Include="..\src\utils\prediction.cpp" />
+    <ClCompile Include="..\src\utils\utility.cpp" />
+    <ClCompile Include="main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\torchscript\yolov10n_512_1024.torchscript" />
+    <None Include="..\torchscript\yolov8m-pose_512_1024.torchscript" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

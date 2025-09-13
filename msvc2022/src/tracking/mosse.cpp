@@ -4,8 +4,7 @@
  * @author Akira Matsuo (M2 student at GSII)
  * @date 2022-09-12
  */
-#include "stdafx.h"
-#include "mosse.h"
+#include "../../include/tracking/mosse.h"
 
 extern const double threshold_mosse;
 
@@ -96,6 +95,10 @@ namespace cv {
         }
 
         bool TrackerMOSSE::init(const Mat& image, Rect2d& boundingBox) {
+
+			//Initialize scores.
+			_scores = Point3d(0.0,0.0,0.0);
+
             Mat img;
             if (image.channels() == 1)
                 img = image;
@@ -144,14 +147,13 @@ namespace cv {
             return true;
         }
 
-        double TrackerMOSSE::update(const Mat& image, Rect2d& boundingBox, std::vector<int>& previous_move, bool transport, bool bool_skip, double psrThreshold) {
+        double TrackerMOSSE::update(const Mat& image, Rect2d& boundingBox, Point2d& previous_move) {
             if (H.empty())  // not initialized
                 return false;
 
-            if (transport) {
-                center.x = boundingBox.x + boundingBox.width / 2;
-                center.y = boundingBox.y + boundingBox.height / 2;
-            }
+			//bounding box is expressed in the image coordinate system.
+			center.x = boundingBox.x + boundingBox.width / 2;//(left,top,right,bottom)
+			center.y = boundingBox.y + boundingBox.height / 2;//(left,top,right,bottom)
 
             Mat image_sub;
             getRectSubPix(image, size, center, image_sub);
@@ -162,43 +164,38 @@ namespace cv {
 
             Point delta_xy;
             double PSR = correlate(image_sub, delta_xy);
-            if (PSR < psrThreshold)
-                return PSR;
+
+            if (PSR < _psrThreshold)
+                return PSR;//failure to update.
+
+			//update scores.
+			double mu_previous = _scores.x;
+			double var_previous = _scores.y;
+			_scores.x = (_scores.z*_scores.x+PSR)/(_scores.z+1);//update mean. 1/(N_samples+1)*(N_samples*mean+PSR)
+			_scores.y = (_scores.z*(_scores.y+mu_previous*mu_previous)+PSR*PSR)/(_scores.z+1)-_scores.x*_scores.x;//update variance. 1/(N_samples+1)*(N_samples*std+std(PSR-mean))
+			_scores.z++;//increment N_samples
 
             // update location
             center.x += delta_xy.x;
             center.y += delta_xy.y;
-            if (bool_skip)
+
+			//Check occlusion.
+            if (_bool_skip && _scores.z >= _N_WARMUP)//_N_WARMUP consecutive update for checking skip condition
             {
-                if (counter_skip <= MAX_SKIP)
-                {
-                    int count_skip_condition = 0; //number of meeting skip condition 
-                    vel_current = std::pow((std::pow(delta_xy.x, 2) + std::pow(delta_xy.y, 2)), 0.5);
-                    vel_previous = (double)(std::pow((std::pow(previous_move[0], 2) + std::pow(previous_move[1], 2)), 0.5));
-                    if (vel_current >= MIN_MOVE_MOSSE || vel_previous >= MIN_MOVE_MOSSE)
-                    {
-                        double cosine = (delta_xy.x * (double)previous_move[0] + delta_xy.y * (double)previous_move[1]) / (vel_current * vel_previous); //calculate move successiveness
-                        if (cosine <= angle_threshold) count_skip_condition++; //check motion change
-                        //if (std::abs(vel_current - vel_previous) >= move_threshold) count_skip_condition++; //check velocity difference
-                    }
-                    delta_psr = previous_psr - PSR; //change of psr
-                    if ((delta_psr >= delta_psr_threshold && PSR <= MIN_PSR_SKIP) || count_skip_condition == 1)
-                    {
-                        std::cout << "MOSSE  : : skip updating" << std::endl;
-                        counter_skip++;
-                        boundingBox.x = boundingBox.x + (double)previous_move[0]; //only update position
-                        boundingBox.y = boundingBox.y + (double)previous_move[1];
-                        return PSR;
-                    }
-                }
-                else if (counter_skip > MAX_SKIP && PSR < threshold_mosse) //fail to track
-                {
-                    previous_psr = 0.0;
-                    return 0.0; //fault
-                }
+				//check the current PSR is higher than the lower bound of k*std region.
+				double lower_bound = _scores.x - std::sqrt(_scores.y)*_K_SIGMA;//mu-k*std
+				if (PSR <= lower_bound)//PSR is lower than the lower bound.
+				{
+					std::cout << "MOSSE  : : skip updating" << std::endl;
+					//Reset scores with the previous scores.
+					_scores.x = mu_previous;
+					_scores.y = var_previous;
+					_scores.z -= 1;
+					
+					return 0.0;//return failure to update.
+				}
             }
-            //std::cout << "deltaX=" << delta_xy.x << ", deltaY=" << delta_xy.y << std::endl;
-            counter_skip = 0; //reset skipping counter
+				
             //learning process
             Mat img_sub_new;
             getRectSubPix(image, size, center, img_sub_new);
@@ -220,8 +217,10 @@ namespace cv {
             // return tracked rect
             double x = center.x, y = center.y;
             int w = size.width, h = size.height;
-            boundingBox = Rect2d(Point2d(x - 0.5 * w, y - 0.5 * h), Point2d(x + 0.5 * w, y + 0.5 * h));
-            previous_psr = PSR;
+            // This constructs a Rect2d from two opposite corners (left, top) and (right, bottom).
+			// Internally, Rect2d always stores (x=left, y=top, width=right-left, height=bottom-top).
+            boundingBox = Rect2d(x-0.5*w, y-0.5*h, w, h);
+   
             return PSR;
         }
 

@@ -1,13 +1,182 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="example-app.cpp">
+    <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\detector\yolo_batch.cpp">
+      <Filter>Source Files\src\detector</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\detector\yolo_batch_skeleton.cpp">
+      <Filter>Source Files\src\detector</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\3d\triangulation_skeleton.cpp">
+      <Filter>Source Files\src\3d</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\3d\sequence.cpp">
+      <Filter>Source Files\src\3d</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\3d\triangulation.cpp">
+      <Filter>Source Files\src\3d</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\tracking\tracker.cpp">
+      <Filter>Source Files\src\tracking</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\tracking\mosse.cpp">
+      <Filter>Source Files\src\tracking</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\tracking\optflow.cpp">
+      <Filter>Source Files\src\tracking</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\tracking\template_matching.cpp">
+      <Filter>Source Files\src\tracking</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\utils\utility.cpp">
+      <Filter>Source Files\src\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\utils\buffer_skeleton.cpp">
+      <Filter>Source Files\src\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\utils\hungarian.cpp">
+      <Filter>Source Files\src\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\utils\kalmanfilter.cpp">
+      <Filter>Source Files\src\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\utils\kalmanfilter_3d.cpp">
+      <Filter>Source Files\src\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\utils\kalmanfilter_skeleton.cpp">
+      <Filter>Source Files\src\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\utils\matching.cpp">
+      <Filter>Source Files\src\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\utils\matching_skeleton.cpp">
+      <Filter>Source Files\src\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\utils\prediction.cpp">
+      <Filter>Source Files\src\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\global_parameters_skeleton.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stdafx.cpp">
+      <Filter>Source Files\src</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source Files">
       <UniqueIdentifier>{F23262D7-7A28-3657-BA8F-128552BB4444}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\include">
+      <UniqueIdentifier>{69567b36-db49-4786-8dc5-db6f762a832c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\include\tracking">
+      <UniqueIdentifier>{c9c5651a-1924-48e7-8218-0e75eb13e98e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\include\detector">
+      <UniqueIdentifier>{8e839a7c-5dfd-4364-8bee-4ebbd802363f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\include\utils">
+      <UniqueIdentifier>{e57adb69-4a61-4071-bfc8-cc9faa98642f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\include\3d">
+      <UniqueIdentifier>{dfdf669c-3c12-48f1-b44b-32690c91161f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\src">
+      <UniqueIdentifier>{6238561a-71e0-4a3a-b22c-9c985acfbff4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\src\tracking">
+      <UniqueIdentifier>{95202e71-936f-438c-bd68-9b1bc2ecaadd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\src\detector">
+      <UniqueIdentifier>{f347d6c0-1985-4f14-a8b4-a31946bde25a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\src\utils">
+      <UniqueIdentifier>{d8485b7b-4ae8-4f3e-aebc-ede7964abaca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\src\3d">
+      <UniqueIdentifier>{eea67948-f816-47c3-bf35-3370f6d7e3cc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\torchscript">
+      <UniqueIdentifier>{3d737c17-34ce-4c89-ab11-c0904ac86db9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\include\detector\yolo_batch.h">
+      <Filter>Source Files\include\detector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\detector\yolo_batch_skeleton.h">
+      <Filter>Source Files\include\detector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tracking\tracker.h">
+      <Filter>Source Files\include\tracking</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tracking\mosse.h">
+      <Filter>Source Files\include\tracking</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tracking\optflow.h">
+      <Filter>Source Files\include\tracking</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tracking\template_matching.h">
+      <Filter>Source Files\include\tracking</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\3d\sequence.h">
+      <Filter>Source Files\include\3d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\3d\triangulation.h">
+      <Filter>Source Files\include\3d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\3d\triangulation_skeleton.h">
+      <Filter>Source Files\include\3d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\utils\utility.h">
+      <Filter>Source Files\include\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\utils\buffer_skeleton.h">
+      <Filter>Source Files\include\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\utils\hungarian.h">
+      <Filter>Source Files\include\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\utils\kalmanfilter.h">
+      <Filter>Source Files\include\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\utils\kalmanfilter_3d.h">
+      <Filter>Source Files\include\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\utils\kalmanfilter_skeleton.h">
+      <Filter>Source Files\include\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\utils\matching.h">
+      <Filter>Source Files\include\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\utils\matching_skeleton.h">
+      <Filter>Source Files\include\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\utils\prediction.h">
+      <Filter>Source Files\include\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\global_parameters_mot.h">
+      <Filter>Source Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\global_parameters_skeleton.h">
+      <Filter>Source Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\mot_skeleton.h">
+      <Filter>Source Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\stdafx.h">
+      <Filter>Source Files\include</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\torchscript\yolov8m-pose_512_1024.torchscript">
+      <Filter>Source Files\torchscript</Filter>
+    </None>
+    <None Include="..\torchscript\yolov10n_512_1024.torchscript">
+      <Filter>Source Files\torchscript</Filter>
+    </None>
   </ItemGroup>
 </Project>

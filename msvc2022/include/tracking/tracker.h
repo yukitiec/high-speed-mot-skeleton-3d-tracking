@@ -4,44 +4,10 @@
 #define Template_H
 
 #include "stdafx.h"
-#include "global_parameters.h"
-#include "utility.h"
-#include "mosse.h"
-
-extern const float DIF_THRESHOLD;
-extern const float MIN_MOVE; //minimum opticalflow movement
-extern const int roiSize_wrist;
-extern const int roiSize_elbow;
-extern const int roiSize_shoulder;
-extern const int dense_vel_method;
-extern const double threshold_mosse;
-extern const bool boolChange; //whether change tracker or not
-//save file
-extern const std::string file_of_left;
-extern const std::string file_of_right;
-
-extern std::queue<std::array<cv::Mat1b, 2>> queueFrame;
-extern std::queue<int> queueFrameIndex;
-
-/* left */
-extern std::queue<std::vector<std::vector<cv::Ptr<cv::mytracker::TrackerMOSSE>>>> queueYoloTracker_left;      // queue for old image for optical flow. vector size is [num human,6]
-extern std::queue<std::vector<std::vector<cv::Mat1b>>> queueYoloTemplate_left; // queue for yolo template       // queue for old image for optical flow. vector size is [num human,6]
-extern std::queue<std::vector<std::vector<cv::Rect2i>>> queueYoloRoi_left;        // queue for search roi for optical flow. vector size is [num human,6]
-extern std::queue<std::vector<std::vector<cv::Ptr<cv::mytracker::TrackerMOSSE>>>> queueMosseTracker_left;
-extern std::queue<std::vector<std::vector<cv::Rect2i>>> queueRoi_left;          // queue for search roi for optical flow. vector size is [num human,6]
-extern std::queue<std::vector<std::vector<cv::Mat1b>>> queueTemplate_left;
-extern std::queue<std::vector<std::vector<bool>>> queueScale_left; //search area scale
-extern std::queue<std::vector<std::vector<std::vector<int>>>> queueMoveLeft; //queue for saving previous move
-
-/* right */
-extern std::queue<std::vector<std::vector<cv::Ptr<cv::mytracker::TrackerMOSSE>>>> queueYoloTracker_right;      // queue for old image for optical flow. vector size is [num human,6]
-extern std::queue<std::vector<std::vector<cv::Mat1b>>> queueYoloTemplate_right;      // queue for old image for optical flow. vector size is [num human,6]
-extern std::queue<std::vector<std::vector<cv::Rect2i>>> queueYoloRoi_right;        // queue for search roi for optical flow. vector size is [num human,6]
-extern std::queue<std::vector<std::vector<cv::Rect2i>>> queueRoi_right;          // queue for search roi for optical flow. vector size is [num human,6]
-extern std::queue<std::vector<std::vector<cv::Mat1b>>> queueTemplate_right;
-extern std::queue<std::vector<std::vector<cv::Ptr<cv::mytracker::TrackerMOSSE>>>> queueMosseTracker_right;
-extern std::queue<std::vector<std::vector<bool>>> queueScale_right; //search area scale
-extern std::queue<std::vector<std::vector<std::vector<int>>>> queueMoveRight; //queue for saving previous move
+#include "../include/global_parameters.h"
+#include "../include/utility.h"
+#include "../include/tracking/mosse.h"
+#include "../include/template_matching.h"
 
 class TemplateMatching
 {
@@ -58,7 +24,7 @@ private:
     const double scaleXYolo = 2.5; //3.5 //for throwing //2.0 //for switching
     const double scaleYYolo = 2.5; //3.5 //for throwing
     const double matchingThreshold = 0.7;             // matching threshold
-    const int MATCHINGMETHOD = cv::TM_SQDIFF_NORMED; // //cv::TM_SQDIFF_NORMED -> unique background, cv::TM_CCOEFF_NORMED :: ‘ŠŠÖŒW”, cv::TM_CCORR_NORMED -> patterned background // TM_SQDIFF_NORMED is good for small template
+    const int MATCHINGMETHOD = cv::TM_SQDIFF_NORMED; // //cv::TM_SQDIFF_NORMED -> unique background, cv::TM_CCOEFF_NORMED :: ï¿½ï¿½ï¿½ÖŒWï¿½ï¿½, cv::TM_CCORR_NORMED -> patterned background // TM_SQDIFF_NORMED is good for small template
     const double MoveThreshold = 0.0;                 // move threshold of objects
 
     bool bool_multithread = false; //done -> false if run MOSSE in multiple threads
