@@ -24,6 +24,8 @@ rad.json
 *.torchscript
 #torchvision directory
 torchscript/
+video_20250908/
+yolov10n_weights/
 
 #output file.
 *.csv

@@ -1,13 +1,13 @@
 #pragma once
 
-#ifndef Template_H
-#define Template_H
+#ifndef TRACKER_H
+#define TRACKER_H
 
 #include "stdafx.h"
-#include "../include/global_parameters.h"
-#include "../include/utility.h"
-#include "../include/tracking/mosse.h"
-#include "../include/template_matching.h"
+#include "../global_parameters.h"
+#include "../utils/utility.h"
+#include "../tracking/mosse.h"
+#include "../tracking/template_matching.h"
 
 class TemplateMatching
 {

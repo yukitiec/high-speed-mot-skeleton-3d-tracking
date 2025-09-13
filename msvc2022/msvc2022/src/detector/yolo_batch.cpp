@@ -1,4 +1,4 @@
-#include "yolo_batch.h"
+#include "../../include/detector/yolo_batch.h"
 
 void YOLODetect_batch::detect(cv::Mat1b& frame, const int frameIndex)
 {

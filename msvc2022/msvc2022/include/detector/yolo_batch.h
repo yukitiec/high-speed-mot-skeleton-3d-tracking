@@ -3,8 +3,8 @@
 #ifndef YOLO_BATCH_H
 #define YOLO_BATCH_H
 
-#include "stdafx.h"
-#include "global_parameters.h"
+#include "../stdafx.h"
+#include "../global_parameters.h"
 
 /*  YOLO class definition  */
 class YOLODetect_batch
@@ -14,7 +14,7 @@ private:
     torch::DeviceType devicetype;
     torch::Device* device;
 
-    std::string yolofilePath = "yolov10n_512_1024_ada_1015.torchscript";//RTX A5000. yolov10n_320_640_last.torchscript
+    std::string yolofilePath = "yolov10n_512_1024.torchscript";//RTX A5000. yolov10n_320_640_last.torchscript
     const int originalWidth = 512;
     const int orginalHeight = 512;
     const int frameWidth = 1024;
