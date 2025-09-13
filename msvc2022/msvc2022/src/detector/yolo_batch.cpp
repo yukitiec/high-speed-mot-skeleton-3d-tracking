@@ -140,7 +140,7 @@ void YOLODetect_batch::roiSetting(
     }
 }
 
-void YOLODetect_batch::push2Queue(
+void YOLODetect_batch::convert2Yolo2seq(
     std::vector<cv::Rect2d>& newRoi, std::vector<int>& newClass,
     std::vector<std::vector<cv::Rect2d>>& posSaver, std::vector<std::vector<int>>& classSaver,
     const int& frameIndex, std::vector<int>& detectedFrame, std::vector<int>& detectedFrameClass,

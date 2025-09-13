@@ -101,7 +101,7 @@ public:
     /**
     * @brief push detect results to a que.
     */
-    void push2Queue(
+    void convert2Yolo2seq(
         std::vector<cv::Rect2d>& newRoi, std::vector<int>& newClass,
         std::vector<std::vector<cv::Rect2d>>& posSaver, std::vector<std::vector<int>>& classSaver,
         const int& frameIndex, std::vector<int>& detectedFrame, std::vector<int>& detectedFrameClass,

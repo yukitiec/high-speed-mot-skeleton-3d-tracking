@@ -16,13 +16,6 @@
 class Mot
 {
 private:
-    //for organizing YOLO detections
-    const int originalWidth = 512;
-    const int orginalHeight = 512;
-    const int frameWidth = 1024;
-    const int frameHeight = 512;
-    const int yoloWidth = 1024;
-    const int yoloHeight = 512;
 
     //prediction
     int idx_compensation = 0;//0:kalman filter, 1:linear extrapolation.
@@ -33,7 +26,7 @@ private:
     //matching
     const double IoUThresholdIdentity = 0.1; // for maitainig consistency of trackingS
     const double Rmse_identity = 100.0; // minimum rmse criteria
-    const double threshold_area_ratio = 4.0;//2.0 & 2.0
+    const double threshold_area_ratio = 4.0;//2.0*2.0
     const double Cost_max = 1000.0;
     const double Cost_params_max = 0.0;
     const double lambda_rmse_ = 2.0;
@@ -53,7 +46,7 @@ private:
 
     //triangulation
     std::string rootDir;
-    Triangulation tri;
+    Triangulation tri; 
     Matching match; //matching algorithm
 
 	//Storage.
@@ -132,26 +125,6 @@ public:
     * @brief main function. update every time sequence get new data from Yolo.
     */
     void main();
-
-    /**
-    * @brief Get current data before YOLO inference started.
-    * First : Compare YOLO detection and TM detection
-    * Second : if match : return new templates in the same order with TM
-    * Third : if not match : adapt as a new templates and add after TM data
-    * Fourth : return all class indexes including -1 (not tracked one) for maintainig data consistency
-    */
-    void roiSetting(
-        std::vector<torch::Tensor>& detectedBoxes, std::vector<int>& labels,
-        std::vector<cv::Rect2d>& newRoi_left, std::vector<int>& newClass_left,
-        std::vector<cv::Rect2d>& newRoi_right, std::vector<int>& newClass_right
-    );
-
-    /**
-    * @brief push detect results to a que.
-    */
-    void push2Queue(
-        std::vector<cv::Rect2d>& newRoi, std::vector<int>& newClass, int& frameIndex, Yolo2seq& newdata
-    );
 
     /**
     * @brief match trackers and update Kalman filter.

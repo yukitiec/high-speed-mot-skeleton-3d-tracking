@@ -1,4 +1,5 @@
 #include "../include/mot.h"
+#include "../include/detector/yolo_batch.h"
 
 
 void Mot::main()
@@ -32,9 +33,12 @@ void Mot::main()
         if (!q_endTracking.empty())
             break;
 
-        //std::cout << "-" << std::endl;
         counterFinish = 0;
-        /* new detection data available */
+        
+		//data extraction.
+		//Data from Tracking module.
+
+		//Data from YOLO module.
         if (!q_yolo2buffer.empty()) {//get data from YOLO. -> postprocess first.
 
             auto start = std::chrono::high_resolution_clock::now();
@@ -53,7 +57,7 @@ void Mot::main()
                 //initialize
                 roi_left.clear(); roi_right.clear(); class_left.clear(); class_right.clear();
                 //classify data.
-                roiSetting(rois, labels, roi_left, class_left, roi_right, class_right); //separate detection into left and right
+                YOLODetect_batch::roiSetting(rois, labels, roi_left, class_left, roi_right, class_right); //separate detection into left and right
             }
 
             if (!roi_right.empty() && !roi_left.empty())
@@ -63,368 +67,374 @@ void Mot::main()
                 //left
                 counterNextIteration = 0; //reset counterNextIteration
                 std::vector<int> index_delete_left, index_delete_right;
-                push2Queue(roi_left, class_left, frameIndex, newdata_left);
-                push2Queue(roi_right, class_right, frameIndex, newdata_right);
+                YOLODetect_batch::convert2Yolo2seq(roi_left, class_left, frameIndex, newdata_left);
+                YOLODetect_batch::convert2Yolo2seq(roi_right, class_right, frameIndex, newdata_right);
                 //std::cout << "mot-2" << std::endl;
                 //left
                 //std::thread thread_organize_left(&Sequence::organize, this, std::ref(newdata_left), true,
                 //    std::ref(seqData_left), std::ref(kfData_left), std::ref(kalmanVector_left), std::ref(extrapolation_left),
                 //    std::ref(saveData_left), std::ref(saveKFData_left), std::ref(index_delete_left), std::ref(q_seq2tri_left));
-                organize(newdata_left, true, seqData_left, kfData_left,
-                    kalmanVector_left, extrapolation_left, saveData_left, saveKFData_left, index_delete_left, q_seq2tri_left);
-                //right
-                organize(newdata_right, false, seqData_right, kfData_right,
-                    kalmanVector_right, extrapolation_right, saveData_right, saveKFData_right, index_delete_right, q_seq2tri_right);
-                //thread_organize_left.join(); //wait for left data to finish
-                //std::cout << "mot-3" << std::endl;
-                //std::cout << "1" << std::endl;
-                //procedure to make data_3d.size() corresponding to seqData_left.size().
-                //initialize data_3d for its size to correspond to the seqData_left.size().
-                if (!seqData_left.empty() && data_3d.empty()) {//initial
-                    std::vector<std::vector<std::vector<double>>> initial(seqData_left.size(), std::vector<std::vector<double>>(1, std::vector<double>(5, 0.0)));//{frame,label,x,y,z};initialize with 0.0
-                    std::vector<std::vector<std::vector<double>>> initial_target(seqData_left.size(), std::vector<std::vector<double>>(1, std::vector<double>(8, 0.0)));//{frame,label,x,y,z,nx,ny,nz};initialize with 0.0
-                    std::vector<std::vector<std::vector<double>>> initial_params(seqData_left.size(), std::vector<std::vector<double>>(1, std::vector<double>(n_features, 0.0)));
-                    data_3d = initial;//{frame,label,x,y,z}
-                    targets = initial_target;//{frame,label,x,y,z,nx,ny,nz}
-                    params = initial_params; //frame, label, a_x, b_x, c_x, a_y, b_y, c_y, a_z, b_z, 
-                    if (method_prediction == 1) {//RLS method
-                        instances_rls = std::vector<rls>(seqData_left.size(), init_rls);
-                    }
-                }
+			}
+		}
 
-                //when data is deleted.
-                //delete idx_match_prev according to index_delete. index_delete is in descending order.
-                if (!index_delete_left.empty() || !index_delete_right.empty()) {//delete idx_match_prev.
-                    if (!index_delete_left.empty()) {//left list
-                        int idx;
-                        for (int i = 0; i < index_delete_left.size(); i++) {//for each index of the left.
-                            idx = index_delete_left[i];
-                            //previous match index
-                            match.idx_match_prev.erase(match.idx_match_prev.begin() + idx);
-                            //params&targets
-                            if (params[idx].size() > 1) {//not empty -> save in targets_save
-                                data_3d_save.push_back(data_3d[idx]);//save data.
-                                params_save.push_back(params[idx]);
-                                targets_save.push_back(targets[idx]);
-                            }
+		//newdata is avaialble
+		if (!newdata_left.empty() && !newdata_right.empty()) {
+			organize(newdata_left, true, seqData_left, kfData_left,
+				kalmanVector_left, extrapolation_left, saveData_left, saveKFData_left, index_delete_left, q_seq2tri_left);
+			//right
+			organize(newdata_right, false, seqData_right, kfData_right,
+				kalmanVector_right, extrapolation_right, saveData_right, saveKFData_right, index_delete_right, q_seq2tri_right);
+			//thread_organize_left.join(); //wait for left data to finish
+			//std::cout << "mot-3" << std::endl;
+			//std::cout << "1" << std::endl;
+			//procedure to make data_3d.size() corresponding to seqData_left.size().
+			//initialize data_3d for its size to correspond to the seqData_left.size().
+			if (!seqData_left.empty() && data_3d.empty()) {//initial
+				std::vector<std::vector<std::vector<double>>> initial(seqData_left.size(), std::vector<std::vector<double>>(1, std::vector<double>(5, 0.0)));//{frame,label,x,y,z};initialize with 0.0
+				std::vector<std::vector<std::vector<double>>> initial_target(seqData_left.size(), std::vector<std::vector<double>>(1, std::vector<double>(8, 0.0)));//{frame,label,x,y,z,nx,ny,nz};initialize with 0.0
+				std::vector<std::vector<std::vector<double>>> initial_params(seqData_left.size(), std::vector<std::vector<double>>(1, std::vector<double>(n_features, 0.0)));
+				data_3d = initial;//{frame,label,x,y,z}
+				targets = initial_target;//{frame,label,x,y,z,nx,ny,nz}
+				params = initial_params; //frame, label, a_x, b_x, c_x, a_y, b_y, c_y, a_z, b_z, 
+				if (method_prediction == 1) {//RLS method
+					instances_rls = std::vector<rls>(seqData_left.size(), init_rls);
+				}
+			}
 
-                            //delete
-                            data_3d.erase(data_3d.begin() + idx);
-                            params.erase(params.begin() + idx);
-                            targets.erase(targets.begin() + idx);
-                            if (method_prediction == 1) {//RLS
-                                instances_rls.erase(instances_rls.begin() + idx);
-                            }
-                        }
-                    }
+			//when data is deleted.
+			//delete idx_match_prev according to index_delete. index_delete is in descending order.
+			if (!index_delete_left.empty() || !index_delete_right.empty()) {//delete idx_match_prev.
+				if (!index_delete_left.empty()) {//left list
+					int idx;
+					for (int i = 0; i < index_delete_left.size(); i++) {//for each index of the left.
+						idx = index_delete_left[i];
+						//previous match index
+						match.idx_match_prev.erase(match.idx_match_prev.begin() + idx);
+						//params&targets
+						if (params[idx].size() > 1) {//not empty -> save in targets_save
+							data_3d_save.push_back(data_3d[idx]);//save data.
+							params_save.push_back(params[idx]);
+							targets_save.push_back(targets[idx]);
+						}
 
-                    if (!index_delete_right.empty() && !match.idx_match_prev.size() >= 1) {//right list
-                        int idx_delete;
-                        for (int i = 0; i < index_delete_right.size(); i++) {//for each index of the right
-                            idx_delete = findIndex(match.idx_match_prev, index_delete_right[i]);//find element, index_delete_right[i], from match.idx_match_prev.
-                            if (idx_delete >= 0) {//found
-                                match.idx_match_prev[idx_delete] = -1;//convert to -1.
-                            }
-                        }
-                    }
-                }
+						//delete
+						data_3d.erase(data_3d.begin() + idx);
+						params.erase(params.begin() + idx);
+						targets.erase(targets.begin() + idx);
+						if (method_prediction == 1) {//RLS
+							instances_rls.erase(instances_rls.begin() + idx);
+						}
+					}
+				}
 
-                //when new data is added.
-                if (seqData_left.size() > data_3d.size()) {//new data is added to the seqData_left -> prepare empty data in data_3d.
+				if (!index_delete_right.empty() && !match.idx_match_prev.size() >= 1) {//right list
+					int idx_delete;
+					for (int i = 0; i < index_delete_right.size(); i++) {//for each index of the right
+						idx_delete = findIndex(match.idx_match_prev, index_delete_right[i]);//find element, index_delete_right[i], from match.idx_match_prev.
+						if (idx_delete >= 0) {//found
+							match.idx_match_prev[idx_delete] = -1;//convert to -1.
+						}
+					}
+				}
+			}
 
-                    //data_3d
-                    while (seqData_left.size() > data_3d.size())
-                        data_3d.push_back(initial_add);//add empty storage.
+			//when new data is added.
+			if (seqData_left.size() > data_3d.size()) {//new data is added to the seqData_left -> prepare empty data in data_3d.
 
-                    //targets
-                    while (seqData_left.size() > targets.size())
-                        targets.push_back(initial_add_target);//add empty storage.
+				//data_3d
+				while (seqData_left.size() > data_3d.size())
+					data_3d.push_back(initial_add);//add empty storage.
 
-                    //params
-                    while (seqData_left.size() > params.size()) {
-                        params.push_back(initial_add_params);//add empty storage.
-                        if (method_prediction == 1)//RLS method
-                            instances_rls.push_back(init_rls);
-                    }
-                }
-                //std::cout << "mot-4" << std::endl;
-                ////3d triangulation.
-                //auto start_tri = std::chrono::high_resolution_clock::now();
-                if (!seqData_left.empty() && !seqData_right.empty()) {
-                    //std::cout << "3" << std::endl;
-                    //triangulate points.
-                    std::vector<std::vector<int>> matchingIndexes; //list for matching indexes : {n_pairs, (idx_left,idx_right)}
-                    //matching when number of labels increase -> seqData_left.size()>num_obj_left || seqData_right.size()>num_obj_right;
-                    //matching objects in 2 images
-                    match.main(seqData_left, seqData_right, tri.oY_left, tri.oY_right, matchingIndexes);
-                    //std::cout << "mot-5" << std::endl;
-                    //std::cout << "0" << std::endl;
-                    if (!matchingIndexes.empty()) {
-                        //std::cout << "4" << std::endl;
-                        matching_save.push_back(matchingIndexes);
-                        //triangulate 3D points
-                        tri.triangulation(seqData_left, seqData_right, matchingIndexes, data_3d);//[m]
-                        //std::cout << "mot-6" << std::endl;
-                        //predict targets.
-                        double frame_latest, label;
-                        std::vector<double> param_tmp;
-                        std::vector<Seq2robot> params_send;//predicted trajectory parameters to send to RobotControl.cpp.
-                        //std::cout << "1" << std::endl;
-                        for (int i = 0; i < data_3d.size(); i++) {//for each objects
-                            frame_latest = data_3d[i].back()[0];
-                            label = data_3d[i].back()[1];
-                            if (method_prediction == 0) {//ordinary Least squares method
-                                if (data_3d[i].size() >= 3) {//sufficient data. minimum nubmer of data is 3.
-                                    Seq2robot seq2robot;
-                                    prediction.predictTargets(i, depth_target, data_3d[i], targets);
-                                    //push params for trajectory prediction. quadratic fitting.
-                                    param_tmp = std::vector<double>{ frame_latest,label,
-                                        prediction.coefX(1),prediction.coefX(2),
-                                        prediction.coefY(1),prediction.coefY(2),
-                                        prediction.coefZ(0),prediction.coefZ(1),prediction.coefZ(2)
-                                    };
+				//targets
+				while (seqData_left.size() > targets.size())
+					targets.push_back(initial_add_target);//add empty storage.
 
-                                    if (!params.empty()) {
+				//params
+				while (seqData_left.size() > params.size()) {
+					params.push_back(initial_add_params);//add empty storage.
+					if (method_prediction == 1)//RLS method
+						instances_rls.push_back(init_rls);
+				}
+			}
+			//std::cout << "mot-4" << std::endl;
+			////3d triangulation.
+			//auto start_tri = std::chrono::high_resolution_clock::now();
+			if (!seqData_left.empty() && !seqData_right.empty()) {
+				//std::cout << "3" << std::endl;
+				//triangulate points.
+				std::vector<std::vector<int>> matchingIndexes; //list for matching indexes : {n_pairs, (idx_left,idx_right)}
+				//matching when number of labels increase -> seqData_left.size()>num_obj_left || seqData_right.size()>num_obj_right;
+				//matching objects in 2 images
+				match.main(seqData_left, seqData_right, tri.oY_left, tri.oY_right, matchingIndexes);
+				//std::cout << "mot-5" << std::endl;
+				//std::cout << "0" << std::endl;
+				if (!matchingIndexes.empty()) {
+					//std::cout << "4" << std::endl;
+					matching_save.push_back(matchingIndexes);
+					//triangulate 3D points
+					tri.triangulation(seqData_left, seqData_right, matchingIndexes, data_3d);//[m]
+					//std::cout << "mot-6" << std::endl;
+					//predict targets.
+					double frame_latest, label;
+					std::vector<double> param_tmp;
+					std::vector<Seq2robot> params_send;//predicted trajectory parameters to send to RobotControl.cpp.
+					//std::cout << "1" << std::endl;
+					for (int i = 0; i < data_3d.size(); i++) {//for each objects
+						frame_latest = data_3d[i].back()[0];
+						label = data_3d[i].back()[1];
+						if (method_prediction == 0) {//ordinary Least squares method
+							if (data_3d[i].size() >= 3) {//sufficient data. minimum nubmer of data is 3.
+								Seq2robot seq2robot;
+								prediction.predictTargets(i, depth_target, data_3d[i], targets);
+								//push params for trajectory prediction. quadratic fitting.
+								param_tmp = std::vector<double>{ frame_latest,label,
+									prediction.coefX(1),prediction.coefX(2),
+									prediction.coefY(1),prediction.coefY(2),
+									prediction.coefZ(0),prediction.coefZ(1),prediction.coefZ(2)
+								};
 
-                                        if (params[i][0][0] == 0.0)//first data.
-                                            params[i][0] = param_tmp;
-                                        else//after first.
-                                            params[i].push_back(param_tmp);
+								if (!params.empty()) {
 
-                                        if (params[i].size() >= counter_update_params_) {//valid prediction. params:{#(objects),#(seq),(frame_target,label,coef_x,coef_y,coef_z)}
-                                            seq2robot.frame_current = frame_latest;
-                                            seq2robot.label = label;
-                                            //seq2robot.param_x = Eigen::Vector2d(prediction.coefX(1), prediction.coefX(2));
-                                            //seq2robot.param_y = Eigen::Vector2d(prediction.coefY(1), prediction.coefY(2));
-                                            //seq2robot.param_z = Eigen::Vector3d(prediction.coefZ(0), prediction.coefZ(1), prediction.coefZ(2));
-                                            seq2robot.param_x = Eigen::Vector2d(params[i].back()[2], params[i].back()[3]);
-                                            seq2robot.param_y = Eigen::Vector2d(params[i].back()[4], params[i].back()[5]);
-                                            seq2robot.param_z = Eigen::Vector3d(params[i].back()[6], params[i].back()[7], params[i].back()[8]);
-                                            seq2robot.pos_current = data_3d[i].back();//latest data.
-                                            params_send.push_back(seq2robot);
-                                        }
-                                    }
-                                }
-                            }
-                            else if (method_prediction == 1) {//recursive least squares method.
+									if (params[i][0][0] == 0.0)//first data.
+										params[i][0] = param_tmp;
+									else//after first.
+										params[i].push_back(param_tmp);
 
-                                if (data_3d[i].back()[0] > 0) {
-                                    Seq2robot seq2robot;
-                                    std::vector<Eigen::VectorXd> coeffs = prediction.predictTargets_rls(i, depth_target, data_3d[i], instances_rls, targets);
-                                    //save data.
-                                    param_tmp = std::vector<double>{ frame_latest,label };
-                                    //coeff_x
-                                    for (int i_para = 0; i_para < coeffs.size(); i_para++) {
-                                        for (int i_ele = 0; i_ele < coeffs[i_para].size(); i_ele++) {
-                                            param_tmp.push_back(coeffs[i_para](i_ele));
-                                        }
-                                    }
+									if (params[i].size() >= counter_update_params_) {//valid prediction. params:{#(objects),#(seq),(frame_target,label,coef_x,coef_y,coef_z)}
+										seq2robot.frame_current = frame_latest;
+										seq2robot.label = label;
+										//seq2robot.param_x = Eigen::Vector2d(prediction.coefX(1), prediction.coefX(2));
+										//seq2robot.param_y = Eigen::Vector2d(prediction.coefY(1), prediction.coefY(2));
+										//seq2robot.param_z = Eigen::Vector3d(prediction.coefZ(0), prediction.coefZ(1), prediction.coefZ(2));
+										seq2robot.param_x = Eigen::Vector2d(params[i].back()[2], params[i].back()[3]);
+										seq2robot.param_y = Eigen::Vector2d(params[i].back()[4], params[i].back()[5]);
+										seq2robot.param_z = Eigen::Vector3d(params[i].back()[6], params[i].back()[7], params[i].back()[8]);
+										seq2robot.pos_current = data_3d[i].back();//latest data.
+										params_send.push_back(seq2robot);
+									}
+								}
+							}
+						}
+						else if (method_prediction == 1) {//recursive least squares method.
 
-                                    if (!params.empty()) {
-                                        if (params[i][0][0] == 0.0)//first data.
-                                            params[i][0] = param_tmp;
-                                        else//after first.
-                                            params[i].push_back(param_tmp);
+							if (data_3d[i].back()[0] > 0) {
+								Seq2robot seq2robot;
+								std::vector<Eigen::VectorXd> coeffs = prediction.predictTargets_rls(i, depth_target, data_3d[i], instances_rls, targets);
+								//save data.
+								param_tmp = std::vector<double>{ frame_latest,label };
+								//coeff_x
+								for (int i_para = 0; i_para < coeffs.size(); i_para++) {
+									for (int i_ele = 0; i_ele < coeffs[i_para].size(); i_ele++) {
+										param_tmp.push_back(coeffs[i_para](i_ele));
+									}
+								}
 
-                                        if (params[i].size() >= counter_update_params_) {//valid prediction. params:{#(objects),#(seq),(frame_target,label,coef_x,coef_y,coef_z)}
-                                            seq2robot.frame_current = frame_latest;
-                                            seq2robot.label = label;
-                                            seq2robot.param_x = coeffs[0];
-                                            seq2robot.param_y = coeffs[1];
-                                            seq2robot.param_z = coeffs[2];
-                                            seq2robot.pos_current = data_3d[i].back();//latest data.
-                                            params_send.push_back(seq2robot);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        //std::cout << "mot-7" << std::endl;
-                        //send predicted trajectory parameters.
-                        if (!params_send.empty()) {
-                            //determine target pose.
-                            std::vector<double> pose_target(6, 0.0);
-                            InfoParams param_target;
-                            double frame_target;
-                            bool bool_back = false;
-                            double frame_target_return = decide_target(params_send, frame_latest, pose_target, param_target, frame_target, bool_back);
+								if (!params.empty()) {
+									if (params[i][0][0] == 0.0)//first data.
+										params[i][0] = param_tmp;
+									else//after first.
+										params[i].push_back(param_tmp);
 
-                            //std::cout << "bool_back=" << bool_back << std::endl;
-                            if (bool_backward_ && bool_back) {//make the robot to move backward
-                                /***Preprocess***/
-                                boolImgs = ut_robot.getFrameFromQueueRobot(frameIndex);
-                                if (boolImgs) {
-                                    if (frame_latest < frameIndex)
-                                        frame_latest = frameIndex;
-                                }
-                                double time_current = frame_latest / (double)FPS;//time[sec]
-                                double time_target = frame_target / (double)FPS;//
-                                double dt_interval_ = 0.02;//check target pose from (time_target - 0.1) sec to (time_target+0.04) sec.
-                                double time_candidate;
-                                double speed;
-                                double speed_min_ = speed_max_ * (double)FPS;//[m/frame]*[frame/sec]->[m/sec]
-                                //trajectory parameters.
-                                Eigen::Vector2d px = param_target.param_x;
-                                Eigen::Vector2d py = param_target.param_y;
-                                Eigen::Vector3d pz = param_target.param_z;
+									if (params[i].size() >= counter_update_params_) {//valid prediction. params:{#(objects),#(seq),(frame_target,label,coef_x,coef_y,coef_z)}
+										seq2robot.frame_current = frame_latest;
+										seq2robot.label = label;
+										seq2robot.param_x = coeffs[0];
+										seq2robot.param_y = coeffs[1];
+										seq2robot.param_z = coeffs[2];
+										seq2robot.pos_current = data_3d[i].back();//latest data.
+										params_send.push_back(seq2robot);
+									}
+								}
+							}
+						}
+					}
+					//std::cout << "mot-7" << std::endl;
+					//send predicted trajectory parameters.
+					if (!params_send.empty()) {
+						//determine target pose.
+						std::vector<double> pose_target(6, 0.0);
+						InfoParams param_target;
+						double frame_target;
+						bool bool_back = false;
+						double frame_target_return = decide_target(params_send, frame_latest, pose_target, param_target, frame_target, bool_back);
 
-                                std::vector<double> pose_robot = ee_current_;//get current robot end-effector pose.
-                                double x_ee = pose_robot[0];
-                                double y_ee = pose_robot[1];
-                                double z_ee = pose_robot[2];
-                                double xT, yT, zT, nxT, nyT, nzT, norm_rot;
-                                double time_target_tmp = time_target;
-                                /******/
+						//std::cout << "bool_back=" << bool_back << std::endl;
+						if (bool_backward_ && bool_back) {//make the robot to move backward
+							/***Preprocess***/
+							boolImgs = ut_robot.getFrameFromQueueRobot(frameIndex);
+							if (boolImgs) {
+								if (frame_latest < frameIndex)
+									frame_latest = frameIndex;
+							}
+							double time_current = frame_latest / (double)FPS;//time[sec]
+							double time_target = frame_target / (double)FPS;//
+							double dt_interval_ = 0.02;//check target pose from (time_target - 0.1) sec to (time_target+0.04) sec.
+							double time_candidate;
+							double speed;
+							double speed_min_ = speed_max_ * (double)FPS;//[m/frame]*[frame/sec]->[m/sec]
+							//trajectory parameters.
+							Eigen::Vector2d px = param_target.param_x;
+							Eigen::Vector2d py = param_target.param_y;
+							Eigen::Vector3d pz = param_target.param_z;
 
-                                /***Check the close targets' position.***/
-                                //std::cout << "time_current=" << time_current << ", time_target=" << time_target <<", x_target="<<pose_target[0]<<", y_target="<<pose_target[1]<<", z_target="<<pose_target[2] << std::endl;
-                                for (int i = -3; i < 11; i++) {//t-0.4 sec ~ t+0.2 sec
-                                    time_candidate = time_target + (double)i * dt_interval_;//candidate catching time
-                                    xT = px(0) * time_candidate + px(1);
-                                    yT = py(0) * time_candidate + py(1);
-                                    zT = pz(0) * time_candidate * time_candidate + pz(1) * time_candidate + pz(2);
-                                    nxT = px(0);
-                                    nyT = py(0);
-                                    nzT = 2.0 * pz(0) * time_candidate + pz(1);
-                                    norm_rot = std::sqrt(nxT * nxT + nyT * nyT + nzT * nzT);
-                                    if (norm_rot > 0.0) {
-                                        nxT = -1.0 * nxT / norm_rot;
-                                        nyT = -1.0 * nyT / norm_rot;
-                                        nzT = -1.0 * nzT / norm_rot;
-                                    }
-                                    //consider cup's size
-                                    xT = xT - std::max(-1.0 * h_cup_, std::min(h_cup_, nxT * h_cup_));
-                                    yT = yT - std::max(-1.0 * h_cup_, std::min(h_cup_, nyT * h_cup_));
-                                    zT = zT - std::max(-1.0 * h_cup_, std::min(h_cup_, nzT * h_cup_));
-                                    //std::cout << "time_current=" << time_current << ", time_target=" << time_candidate <<",xT="<<xT<<", yT="<<yT<<",zT="<<zT << std::endl;
-                                    if ((x_min_ <= xT && xT <= x_max_) && (y_min_ <= yT && yT <= y_max_) && (z_min_ <= zT && zT <= z_max_)) {
-                                        speed = std::sqrt((x_ee - xT) * (x_ee - xT) + (y_ee - yT) * (y_ee - yT) + (z_ee - zT) * (z_ee - zT));//[m]
-                                        speed /= (time_candidate - time_current);//[m/sec]
-                                        //std::cout << "speed=" << speed<<", z_target="<<zT<< std::endl;
-                                        if (0.0 < speed && speed < speed_min_) {//lower speed -> good -> change the target position
-                                            pose_target = std::vector<double>{ xT,yT,zT,nxT,nyT,nzT };
-                                            speed_min_ = speed;
-                                            time_target_tmp = time_candidate;
-                                            //std::cout << "Updated minimum speed=" << speed_min_<<", target_time="<<time_target_tmp << std::endl;
-                                        }
-                                    }
-                                }
-                                frame_target = (int)(time_target_tmp * (double)FPS);
-                                infoTarget_.delta_frame = frame_target - frame_latest;
-                                infoTarget_.p_target = pose_target;
-                            }
-                            /***End fine search***/
+							std::vector<double> pose_robot = ee_current_;//get current robot end-effector pose.
+							double x_ee = pose_robot[0];
+							double y_ee = pose_robot[1];
+							double z_ee = pose_robot[2];
+							double xT, yT, zT, nxT, nyT, nzT, norm_rot;
+							double time_target_tmp = time_target;
+							/******/
 
-                            /***Send target position to robot_control.cpp***/
-                            if (frame_target_return > 0.0) {
-                                if ((x_min_ <= pose_target[0] && pose_target[0] <= x_max_) && (y_min_ <= pose_target[1] && pose_target[1] <= y_max_) && (z_min_ <= pose_target[2] && pose_target[2] <= z_max_)) {
-                                    Seq2robot_send new_target;
-                                    new_target.frame_current = frame_latest;
-                                    new_target.frame_target = frame_target;
-                                    new_target.pose_target = pose_target;
-                                    new_target.param_target = param_target;
-                                    new_target.bool_back = bool_back;
-                                    q_seq2robot.push(new_target);
-                                    //std::cout << "SEND DATA :: x_target=" << pose_target[0] << ", y_target=" << pose_target[1] << ", z_target=" << pose_target[2] << std::endl;
-                                }
-                                else {//reset target information
-                                    infoTarget_.p_target.clear();
-                                }
-                            }
-                            //q_trajectory_params.push(params_send);
-                        }
+							/***Check the close targets' position.***/
+							//std::cout << "time_current=" << time_current << ", time_target=" << time_target <<", x_target="<<pose_target[0]<<", y_target="<<pose_target[1]<<", z_target="<<pose_target[2] << std::endl;
+							for (int i = -3; i < 11; i++) {//t-0.4 sec ~ t+0.2 sec
+								time_candidate = time_target + (double)i * dt_interval_;//candidate catching time
+								xT = px(0) * time_candidate + px(1);
+								yT = py(0) * time_candidate + py(1);
+								zT = pz(0) * time_candidate * time_candidate + pz(1) * time_candidate + pz(2);
+								nxT = px(0);
+								nyT = py(0);
+								nzT = 2.0 * pz(0) * time_candidate + pz(1);
+								norm_rot = std::sqrt(nxT * nxT + nyT * nyT + nzT * nzT);
+								if (norm_rot > 0.0) {
+									nxT = -1.0 * nxT / norm_rot;
+									nyT = -1.0 * nyT / norm_rot;
+									nzT = -1.0 * nzT / norm_rot;
+								}
+								//consider cup's size
+								xT = xT - std::max(-1.0 * h_cup_, std::min(h_cup_, nxT * h_cup_));
+								yT = yT - std::max(-1.0 * h_cup_, std::min(h_cup_, nyT * h_cup_));
+								zT = zT - std::max(-1.0 * h_cup_, std::min(h_cup_, nzT * h_cup_));
+								//std::cout << "time_current=" << time_current << ", time_target=" << time_candidate <<",xT="<<xT<<", yT="<<yT<<",zT="<<zT << std::endl;
+								if ((x_min_ <= xT && xT <= x_max_) && (y_min_ <= yT && yT <= y_max_) && (z_min_ <= zT && zT <= z_max_)) {
+									speed = std::sqrt((x_ee - xT) * (x_ee - xT) + (y_ee - yT) * (y_ee - yT) + (z_ee - zT) * (z_ee - zT));//[m]
+									speed /= (time_candidate - time_current);//[m/sec]
+									//std::cout << "speed=" << speed<<", z_target="<<zT<< std::endl;
+									if (0.0 < speed && speed < speed_min_) {//lower speed -> good -> change the target position
+										pose_target = std::vector<double>{ xT,yT,zT,nxT,nyT,nzT };
+										speed_min_ = speed;
+										time_target_tmp = time_candidate;
+										//std::cout << "Updated minimum speed=" << speed_min_<<", target_time="<<time_target_tmp << std::endl;
+									}
+								}
+							}
+							frame_target = (int)(time_target_tmp * (double)FPS);
+							infoTarget_.delta_frame = frame_target - frame_latest;
+							infoTarget_.p_target = pose_target;
+						}
+						/***End fine search***/
 
-                        //comparison of data_3d and data_3d_save. based on the predicted params. time-sequential-based comparison.
-                        if (!params.empty() && !params_save.empty()) {
-                            //std::cout << "7" << std::endl;
-                            std::vector<double> idxes_current, idxes_prev;
-                            std::vector<std::vector<double>> costMatrix;
-                            int counter_iteration = 0;
-                            for (int i_cur = 0; i_cur < params.size(); i_cur++) {//for each object. 
-                                if (params[i_cur][0][0] > 0.0) {//current parameters were calculated. <- (frame,laebel,params)
-                                    std::vector<double> cost_row;
-                                    idxes_current.push_back(i_cur);
-                                    for (int i_prev = 0; i_prev < params_save.size(); i_prev++) {//for each object in save storage.
-                                        if (params_save[i_prev][0][0] > 0.0) {
-                                            if (counter_iteration == 0)
-                                                idxes_prev.push_back(i_prev);
-                                            //tracker id
-                                            label_latest = params[i_cur].back()[1];
-                                            label_prev = params_save[i_prev].back()[1];
-                                            cost_label = compareID(label_latest, label_prev);
-                                            //parameters
-                                            params_latest = params[i_cur].back();
-                                            params_prev_latest = params_save[i_prev].back();
-                                            cost_params = compareParams(params_latest, params_prev_latest);
-                                            //total
-                                            cost_total = cost_label + cost_params;
-                                            cost_row.push_back(cost_total);
-                                        }
-                                    }
-                                    counter_iteration++;
-                                    if (!cost_row.empty())
-                                        costMatrix.push_back(cost_row);
-                                }
-                            }
-                            //std::cout << "8" << std::endl;
-                            //match predictions based on hungarian algorithm.
-                            if (!costMatrix.empty()) {
-                                //std::cout << "3-0" << std::endl;
-                                std::vector<int> assignment;
-                                double cost = HungAlgo.Solve(costMatrix, assignment);
-                                std::vector<int> index_delete;//index list of the YOLO detections to be deleted.
-                                double frame_prev;
-                                int index_current, index_storage;
-                                //assign data according to indexList_tm, indexList_yolo and assign
-                                for (unsigned int x = 0; x < assignment.size(); x++) {//for each candidate from 0 to the end of the candidates. ascending way.
-                                    index_current = idxes_current[x];//current data index
-                                    //std::cout << "index_current=" << index_current << std::endl;
-                                    if (assignment[x] >= 0) {//matching tracker is found.
-                                        if (costMatrix[x][assignment[x]] < Cost_params_max) {//under max cost
-                                            index_storage = idxes_prev[assignment[x]];//storage index
-                                            index_delete.push_back(index_storage);
-                                            //merge data_3d_save with data_3d.
-                                            concatenateVectors(data_3d_save[index_storage], data_3d[index_current]);
-                                            data_3d[index_current] = data_3d_save[index_storage];
-                                            //std::cout << "*" << std::endl;
-                                            //targets
-                                            concatenateVectors(targets_save[index_storage], targets[index_current]);
-                                            targets[index_current] = targets_save[index_storage];
-                                            //std::cout << "**" << std::endl;
-                                            //params
-                                            concatenateVectors(params_save[index_storage], params[index_current]);
-                                            params[index_current] = params_save[index_storage];
-                                            //std::cout << "***" << std::endl;
-                                        }
-                                    }
-                                }
-                                //std::cout << "3-1" << std::endl;
-                                if (!index_delete.empty()) {
-                                    //sort index_delete in descending way.
-                                    //delete data from data_3d_save,params_save,tarets_save.
-                                    std::sort(index_delete.rbegin(), index_delete.rend());
-                                    for (int& k : index_delete) {
-                                        data_3d_save.erase(data_3d_save.begin() + k);
-                                        targets_save.erase(targets_save.begin() + k);
-                                        params_save.erase(params_save.begin() + k);
-                                    }
-                                }
+						/***Send target position to robot_control.cpp***/
+						if (frame_target_return > 0.0) {
+							if ((x_min_ <= pose_target[0] && pose_target[0] <= x_max_) && (y_min_ <= pose_target[1] && pose_target[1] <= y_max_) && (z_min_ <= pose_target[2] && pose_target[2] <= z_max_)) {
+								Seq2robot_send new_target;
+								new_target.frame_current = frame_latest;
+								new_target.frame_target = frame_target;
+								new_target.pose_target = pose_target;
+								new_target.param_target = param_target;
+								new_target.bool_back = bool_back;
+								q_seq2robot.push(new_target);
+								//std::cout << "SEND DATA :: x_target=" << pose_target[0] << ", y_target=" << pose_target[1] << ", z_target=" << pose_target[2] << std::endl;
+							}
+							else {//reset target information
+								infoTarget_.p_target.clear();
+							}
+						}
+						//q_trajectory_params.push(params_send);
+					}
 
-                            }
-                        }
-                    }
-                }
+					//comparison of data_3d and data_3d_save. based on the predicted params. time-sequential-based comparison.
+					if (!params.empty() && !params_save.empty()) {
+						//std::cout << "7" << std::endl;
+						std::vector<double> idxes_current, idxes_prev;
+						std::vector<std::vector<double>> costMatrix;
+						int counter_iteration = 0;
+						for (int i_cur = 0; i_cur < params.size(); i_cur++) {//for each object. 
+							if (params[i_cur][0][0] > 0.0) {//current parameters were calculated. <- (frame,laebel,params)
+								std::vector<double> cost_row;
+								idxes_current.push_back(i_cur);
+								for (int i_prev = 0; i_prev < params_save.size(); i_prev++) {//for each object in save storage.
+									if (params_save[i_prev][0][0] > 0.0) {
+										if (counter_iteration == 0)
+											idxes_prev.push_back(i_prev);
+										//tracker id
+										label_latest = params[i_cur].back()[1];
+										label_prev = params_save[i_prev].back()[1];
+										cost_label = compareID(label_latest, label_prev);
+										//parameters
+										params_latest = params[i_cur].back();
+										params_prev_latest = params_save[i_prev].back();
+										cost_params = compareParams(params_latest, params_prev_latest);
+										//total
+										cost_total = cost_label + cost_params;
+										cost_row.push_back(cost_total);
+									}
+								}
+								counter_iteration++;
+								if (!cost_row.empty())
+									costMatrix.push_back(cost_row);
+							}
+						}
+						//std::cout << "8" << std::endl;
+						//match predictions based on hungarian algorithm.
+						if (!costMatrix.empty()) {
+							//std::cout << "3-0" << std::endl;
+							std::vector<int> assignment;
+							double cost = HungAlgo.Solve(costMatrix, assignment);
+							std::vector<int> index_delete;//index list of the YOLO detections to be deleted.
+							double frame_prev;
+							int index_current, index_storage;
+							//assign data according to indexList_tm, indexList_yolo and assign
+							for (unsigned int x = 0; x < assignment.size(); x++) {//for each candidate from 0 to the end of the candidates. ascending way.
+								index_current = idxes_current[x];//current data index
+								//std::cout << "index_current=" << index_current << std::endl;
+								if (assignment[x] >= 0) {//matching tracker is found.
+									if (costMatrix[x][assignment[x]] < Cost_params_max) {//under max cost
+										index_storage = idxes_prev[assignment[x]];//storage index
+										index_delete.push_back(index_storage);
+										//merge data_3d_save with data_3d.
+										concatenateVectors(data_3d_save[index_storage], data_3d[index_current]);
+										data_3d[index_current] = data_3d_save[index_storage];
+										//std::cout << "*" << std::endl;
+										//targets
+										concatenateVectors(targets_save[index_storage], targets[index_current]);
+										targets[index_current] = targets_save[index_storage];
+										//std::cout << "**" << std::endl;
+										//params
+										concatenateVectors(params_save[index_storage], params[index_current]);
+										params[index_current] = params_save[index_storage];
+										//std::cout << "***" << std::endl;
+									}
+								}
+							}
+							//std::cout << "3-1" << std::endl;
+							if (!index_delete.empty()) {
+								//sort index_delete in descending way.
+								//delete data from data_3d_save,params_save,tarets_save.
+								std::sort(index_delete.rbegin(), index_delete.rend());
+								for (int& k : index_delete) {
+									data_3d_save.erase(data_3d_save.begin() + k);
+									targets_save.erase(targets_save.begin() + k);
+									params_save.erase(params_save.begin() + k);
+								}
+							}
 
-                auto stop_tri = std::chrono::high_resolution_clock::now();
-                auto stop = std::chrono::high_resolution_clock::now();
-                //auto duration_tri = std::chrono::duration_cast<std::chrono::microseconds>(stop_tri - start_tri);
-                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+						}
+					}
+				}
+			}
+		}
 
-                t_elapsed += duration.count();
-                counterIteration++;
-                //std::cout << "time taken by 3d positioning=" << duration_tri.count() << " microseconds" << std::endl;
-                if (counterIteration % 50 == 0)
-                    std::cout << " !!!!!! Time taken by Sequence and KF in both frames : " << duration.count() << " microseconds !!!!!!" << std::endl;
+		auto stop_tri = std::chrono::high_resolution_clock::now();
+		auto stop = std::chrono::high_resolution_clock::now();
+		//auto duration_tri = std::chrono::duration_cast<std::chrono::microseconds>(stop_tri - start_tri);
+		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+
+		t_elapsed += duration.count();
+		counterIteration++;
+		//std::cout << "time taken by 3d positioning=" << duration_tri.count() << " microseconds" << std::endl;
+		if (counterIteration % 50 == 0)
+			std::cout << " !!!!!! Time taken by Sequence and KF in both frames : " << duration.count() << " microseconds !!!!!!" << std::endl;
             }
         }
         else
@@ -506,80 +516,7 @@ void Mot::main()
     }
 }
 
-void Sequence::roiSetting(
-    std::vector<torch::Tensor>& detectedBoxes, std::vector<int>& labels,
-    std::vector<cv::Rect2d>& newRoi_left, std::vector<int>& newClass_left,
-    std::vector<cv::Rect2d>& newRoi_right, std::vector<int>& newClass_right
-)
-{
-    // std::cout << "bboxesYolo size=" << detectedBoxes.size() << std::endl;
-    /* detected by Yolo */
-    if (!detectedBoxes.empty())
-    {
-        //std::cout << "No TM tracker exist " << std::endl;
-        int numBboxes = detectedBoxes.size(); // num of detection
-        int left, top, right, bottom;         // score0 : ball , score1 : box
-        cv::Rect2d roi;
-
-        /* convert torch::Tensor to cv::Rect2d */
-        std::vector<cv::Rect2d> bboxesYolo_left, bboxesYolo_right;
-        for (int i = 0; i < numBboxes; ++i)
-        {
-            float expandrate[2] = { static_cast<float>(frameWidth) / static_cast<float>(yoloWidth), static_cast<float>(frameHeight) / static_cast<float>(yoloHeight) }; // resize bbox to fit original img size
-            // std::cout << "expandRate :" << expandrate[0] << "," << expandrate[1] << std::endl;
-            left = static_cast<int>(detectedBoxes[i][0].item().toFloat() * expandrate[0]);
-            top = static_cast<int>(detectedBoxes[i][1].item().toFloat() * expandrate[1]);
-            right = static_cast<int>(detectedBoxes[i][2].item().toFloat() * expandrate[0]);
-            bottom = static_cast<int>(detectedBoxes[i][3].item().toFloat() * expandrate[1]);
-            //left
-            if (right <= originalWidth)
-            {
-                newRoi_left.emplace_back(left, top, (right - left), (bottom - top));
-                newClass_left.push_back(labels[i]);
-            }
-            //right
-            else if (left >= originalWidth)
-            {
-                newRoi_right.emplace_back(left - originalWidth, top, (right - left), (bottom - top));
-                newClass_right.push_back(labels[i]);
-            }
-        }
-    }
-    /* No object detected in Yolo -> return -1 class label */
-    else
-    {
-        /* nothing to do */
-    }
-}
-
-void Sequence::push2Queue(
-    std::vector<cv::Rect2d>& newRoi, std::vector<int>& newClass, int& frameIndex, Yolo2seq& newdata
-)
-{
-    /*
-     * push detection data to queueLeft
-     */
-
-     /* update data */
-     /* detection is successful */
-    if (!newRoi.empty())
-    {
-        // std::cout << "detection succeeded" << std::endl;
-
-        /* finish initialization */
-        newdata.bbox = newRoi;
-        newdata.classIndex = newClass;
-        newdata.frame = frameIndex;
-    }
-    /* no object detected -> return class label -1 if TM tracker exists */
-    else
-    {
-        //nothing to do.
-    }
-}
-
-
-void Sequence::organize(
+void Mot::organize(
     Yolo2seq& newData, bool bool_left,
     std::vector<std::vector<std::vector<double>>>& seqData, std::vector<std::vector<std::vector<double>>>& kfData,
     std::vector<KalmanFilter2D>& kalmanVector, std::vector<LinearExtrapolation2D>& extrapolation,
