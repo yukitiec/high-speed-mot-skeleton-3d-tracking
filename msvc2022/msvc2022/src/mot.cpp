@@ -1,60 +1,8 @@
-#include "sequence.h"
+#include "../include/mot.h"
 
 
-void Sequence::main()
+void Mot::main()
 {
-    //define variables.
-    std::vector<cv::Rect2d> newRoi_left, newRoi_right; //new Roi from Yolo inference
-    std::vector<int> newLabel_left, newLabel_right; //new class labels from Yolo inference
-    std::vector<std::vector<int>> seqClasses_left, seqClasses_right; // storage for sequential classes
-
-    //Yolo2sequence
-    Yolo2buffer yolo2buffer;
-    std::vector<torch::Tensor> rois;
-    std::vector<int> labels;
-    cv::Mat1b frame;
-    int frameIndex;
-    Yolo2seq newdata_left, newdata_right;
-    std::vector<cv::Rect2d> roi_left, roi_right;
-    std::vector<int> class_left, class_right;
-
-    //for triangulation
-    std::vector<std::vector<std::vector<double>>> data_3d, data_3d_save; //{num of objects, sequential, { frameIndex,label, X,Y,Z }}
-    std::vector<std::vector<std::vector<int>>> matching_save;//{n_seq,n_objects,{idx_left,idx_right}}
-    std::vector<int> frame_matching;
-    std::vector<std::vector<double>> initial_add(1, std::vector<double>(5, 0.0));//{frame,label,x,y,z};initialize with 0.0
-    std::vector<std::vector<double>> initial_add_params;
-    std::vector<std::vector<double>> initial_add_target(1, std::vector<double>(8, 0.0));//{frame,label,x,y,Fz,nx,ny,nz};initialize with 0.0
-    int n_features;
-    if (method_prediction == 0) {
-        n_features = 2 + dim_poly_x + dim_poly_y + dim_poly_z;
-        initial_add_params = std::vector<std::vector<double>>(1, std::vector<double>(n_features, 0.0));
-
-    }
-    else if (method_prediction == 1) {//RLS method
-        n_features = 2 + dim_poly_x + dim_poly_y + dim_poly_z;
-        initial_add_params = std::vector<std::vector<double>>(1, std::vector<double>(n_features, 0.0));
-    }
-
-    //for prediction
-    std::vector<std::vector<std::vector<double>>> targets, params, targets_save, params_save;//{num of objects, sequence, targets:{frame,label,x,y,z}}, params:{{frame,label,a_x,b_x,c_x,a_y,b_y,c_y,a_z,b_z,c_z}}
-    std::vector<double> params_latest, params_prev_latest;
-    std::vector<rls> instances_rls;//RLS instance (Recursive Least Squares method)
-    rls init_rls(dim_poly_x, dim_poly_y, dim_poly_z, forgetting_factor);//initial RLS 
-
-    //for deciding target positions
-    double delta_x;
-    std::vector<double> ee_current;//robot end-effector current pose.
-    //determine x_candidate position.
-    delta_x = x_max_ - x_min_ - h_cup_;//ivpf_main.x_work_:{x_min,x_max}
-    delta_x /= (n_candidates - 1.0);
-    for (int j = 0; j < (int)n_candidates; j++) {
-        x_candidates.push_back(x_min_ + 0.5 * h_cup_ + delta_x * (double)j);
-    }
-
-    double cost_params, cost_label, cost_total;
-    int label_latest, label_prev;
-
     auto start_whole = std::chrono::high_resolution_clock::now();
     int count_yolo = 0;
     while (true)
@@ -70,6 +18,8 @@ void Sequence::main()
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
     std::cout << "start saving sequential data" << std::endl;
+
+	//make a counter.
     int counterIteration = 0;
     int counterFinish = 0;
     int counterNextIteration = 0;

@@ -4,7 +4,7 @@
  * @author Akira Matsuo (M2 student at GSII)
  * @date 2022-09-12
  */
-#include "../../include/tracking/mosse.h"
+#include "../../include/tracker/mosse.h"
 
 extern const double threshold_mosse;
 

@@ -14,17 +14,14 @@ private:
     torch::DeviceType devicetype;
     torch::Device* device;
 
-    std::string yolofilePath = "yolov10n_512_1024.torchscript";//RTX A5000. yolov10n_320_640_last.torchscript
-    const int originalWidth = 512;
-    const int orginalHeight = 512;
-    const int frameWidth = 1024;
-    const int frameHeight = 512;
-    const int yoloWidth = 1024;
-    const int yoloHeight = 512;
-    const cv::Size YOLOSize{ yoloWidth, yoloHeight };
-    const float IoUThreshold = 0.4;
-    const float ConfThreshold = 0.50;
-    const float IoUThresholdIdentity = 0.1; // for maitainig consistency of tracking
+    std::string yolofilePath;//RTX A5000. yolov10n_320_640_last.torchscript
+    int originalWidth, orginalHeight;
+    int frameWidth;
+    int frameHeight;
+    int yoloWidth;
+    int yoloHeight;
+    cv::Size YOLOSize;
+    double IoUThreshold,ConfThreshold,IoUThresholdIdentity; // for maitainig consistency of tracking
 
     /* initialize function */
     void initializeDevice()
@@ -54,10 +51,20 @@ private:
 
 public:
     // constructor for YOLODetect
-    YOLODetect_batch()
+    YOLODetect_batch(int imgWidth=512, int imgHeight=512, int yoloWidth=1024, int yoloHeight=512,
+		double IoUThreshold=0.4, double ConfThreshold=0.50, double IoUThresholdIdentity=0.1,
+		std::string yolofilePath="yolov10n_512_1024.torchscript")
+	: originalWidth(imgWidth), orginalHeight(imgHeight), yoloWidth(yoloWidth), yoloHeight(yoloHeight),
+	yolofilePath(yolofilePath), IoUThreshold(IoUThreshold), ConfThreshold(ConfThreshold), IoUThresholdIdentity(IoUThresholdIdentity)
     {
         initializeDevice();
         loadModel();
+
+		//size setting.
+		frameWidth = 2*imgWidth;//concatenate two images horizontally
+    	frameHeight = imgHeight;
+		YOLOSize = cv::Size(yoloWidth, yoloHeight);
+
         std::cout << "YOLO construtor has finished!" << std::endl;
     };
     ~YOLODetect_batch() { delete device; }; // Deconstructor

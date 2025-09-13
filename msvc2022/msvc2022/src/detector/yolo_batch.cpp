@@ -34,7 +34,7 @@ void YOLODetect_batch::detect(cv::Mat1b& frame, const int frameIndex)
     //STEP1 :: divide detections into balls ans boxes
     std::vector<torch::Tensor> rois; //detected rois.(n,6),(m,6) :: including both left and right objects
     std::vector<int> labels;//detected labels.
-    auto start = std::chrono::high_resolution_clock::now();
+    //auto start = std::chrono::high_resolution_clock::now();
     torch::Tensor preds_good = preds.select(2, 4) > ConfThreshold; // Extract the high score detections. :: xc is "True" or "False"
     torch::Tensor x0 = preds.index_select(1, torch::nonzero(preds_good[0]).select(1, 0)); // box, x0.shape : (1,n,6) : n: number of candidates
     x0 = x0.squeeze(0); //(1,n,6) -> (n,6) (left,top,right,bottom)

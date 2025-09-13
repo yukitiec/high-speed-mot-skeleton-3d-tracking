@@ -4,7 +4,8 @@
 #define GLOBAL_PARAMETERS_H
 
 #include "stdafx.h"
-#include "RLS.h"
+#include "utils/RLS.h"
+#include "struct.h"
 
 //MOT
 extern const double PI;
@@ -76,71 +77,6 @@ extern std::queue<std::array<cv::Mat1b, 2>> queueFrame_yolopose; // queue for fr
 extern std::queue<int> queueFrameIndex_yolopose;  // queue for frame index
 extern std::queue<int> queueFrameIndex_robot;  // queue for frame index
 
-//structure
-//Yolo to Tracker
-struct Yolo2seq {
-    int frame;
-    std::vector<int> classIndex;
-    std::vector<cv::Rect2d> bbox;
-};
-
-struct Yolo2buffer {
-    std::vector<torch::Tensor> rois; //detected rois.(n,6),(m,6) :: including both left and right objects
-    std::vector<int> labels;//detected labels.
-    cv::Mat1b frame;
-    int frameIndex;
-};
-
-struct InfoTarget {
-    double delta_frame;//frame by catching.
-    std::vector<double> p_target;//current target position, {x,y,z,rx,ry,rz}
-};
-
-struct InfoParams {
-    Eigen::Vector2d param_x;//ax*t+bx
-    Eigen::Vector2d param_y;//ay*t+by
-    Eigen::Vector3d param_z;//az*t*t+bz*t+cz
-};
-
-//trajectory prediction
-struct rls {
-    RLS rlsx;
-    RLS rlsy;
-    RLS rlsz;
-
-    // Constructor for rls to initialize each RLS member
-    rls(const int dimx, const int dimy, const int dimz, const double forget) :
-        rlsx(dimx, forget), rlsy(dimy, forget), rlsz(dimz, forget) {}
-};
-
-struct Seq2robot {
-    double frame_current;
-    double label;
-    Eigen::Vector2d param_x;
-    Eigen::Vector2d param_y;
-    Eigen::Vector3d param_z;
-    std::vector<double> pos_current;//current position {frame,label,x,y,z}
-};
-
-struct Seq2robot_send {
-    double frame_current;
-    double frame_target;
-    std::vector<double> pose_target;
-    InfoParams param_target;
-    bool bool_back;
-};
-
-struct skeleton2robot {
-    double frame_current;
-    double frame_human;
-    std::vector<std::vector<std::vector<double>>> pose_human;
-    std::vector<std::vector<int>> joints_void;
-};
-
-struct Info2Gpu {
-    torch::Tensor imgTensor;
-    cv::Mat1b frame;
-};
 
 extern const double forgetting_factor;
 extern const int dim_poly_x;//linear regression.

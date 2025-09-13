@@ -1,4 +1,4 @@
-#include "../../include/tracking/template_matching.h"
+#include "../../include/tracker/template_matching.h"
 
 bool TemplateMatching::init(const cv::Mat& image, cv::Rect2d& boundingBox)
 {

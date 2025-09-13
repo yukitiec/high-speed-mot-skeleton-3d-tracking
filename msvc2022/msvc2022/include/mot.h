@@ -1,20 +1,19 @@
 #pragma once
 
-#ifndef SEQUENCE_H
-#define SEQUENCE_H
+#ifndef MOT_H
+#define MOT_H
 
 #include "stdafx.h"
-#include "kalmanfilter.h"
+#include "utils/kalmanfilter.h"
 #include "global_parameters.h"
-#include "utility.h"
-#include "hungarian.h"
-#include "triangulation.h"
-#include "prediction.h"
-#include "extrapolation.h"
-#include "RLS.h"
-#include "ivpf2.h"
+#include "utils/utility.h"
+#include "utils/hungarian.h"
+#include "triangulation/triangulation.h"
+#include "utils/prediction.h"
+#include "utils/extrapolation.h"
+#include "utils/RLS.h"
 
-class Sequence
+class Mot
 {
 private:
     //for organizing YOLO detections
@@ -26,10 +25,9 @@ private:
     const int yoloHeight = 512;
 
     //prediction
-    const int idx_compensation = 1;//0:kalman filter, 1:linear extrapolation.
+    int idx_compensation = 0;//0:kalman filter, 1:linear extrapolation.
     //trajectory predictioni
-    const int method_prediction = 0;//0:ordinary least square method. 1: recursive least squares method.
-
+    int method_prediction = 0;//0:ordinary least square method. 1: recursive least squares method.
 
     std::vector<std::vector<double>> defaultVector{ {0.0} }; //for initializing kalman filter
     //matching
@@ -58,93 +56,46 @@ private:
     Triangulation tri;
     Matching match; //matching algorithm
 
-    IVPF ivpf_seq;
+	//Storage.
+	//define variables.
+	std::vector<cv::Rect2d> newRoi_left, newRoi_right; //new Roi from Yolo inference
+	std::vector<int> newLabel_left, newLabel_right; //new class labels from Yolo inference
+	std::vector<std::vector<int>> seqClasses_left, seqClasses_right; // storage for sequential classes
 
-    std::vector<double> x_candidates;//candidates of x position.
+	//Yolo2sequence
+	Yolo2buffer yolo2buffer;
+	std::vector<torch::Tensor> rois;
+	std::vector<int> labels;
+	cv::Mat1b frame;
+	int frameIndex;
+	Yolo2seq newdata_left, newdata_right;
+	std::vector<cv::Rect2d> roi_left, roi_right;
+	std::vector<int> class_left, class_right;
 
-    //move backward to catch the ball.
-    const bool bool_backward_ = true;//move backward.
-    bool bool_back_ = false;//whether the robot should move backward.
-    const double dt_back_ = 0.10;//backward for 0.2 sec.
-    const double dt_back_move_ = 0.05;
-    double frame_current_, frame_target_current_;
-    Utility ut_robot;
-    std::array<cv::Mat1b, 2> frames;
-    int frameIndex;
-    bool boolImgs;
-    InfoParams param_candidate;
-    std::vector<InfoParams> params_candidates;
-    /////////////////////////////////////
+	//for triangulation
+	std::vector<std::vector<std::vector<double>>> data_3d, data_3d_save; //{num of objects, sequential, { frameIndex,label, X,Y,Z }}
+	std::vector<std::vector<std::vector<int>>> matching_save;//{n_seq,n_objects,{idx_left,idx_right}}
+	std::vector<int> frame_matching;
 
-    UR_custom ur_main;
-    MinimumDist minDist_main;
-    IVPF ivpf_main;
+	std::vector<std::vector<double>> initial_add(1, std::vector<double>(5, 0.0));//{frame,label,x,y,z};initialize with 0.0
+	std::vector<std::vector<double>> initial_add_params;
+	std::vector<std::vector<double>> initial_add_target(1, std::vector<double>(8, 0.0));//{frame,label,x,y,Fz,nx,ny,nz};initialize with 0.0
 
-    const double z_head_ = 2.0;//unit [m]
-    const double z_foot_ = 0.0;//unit [m]
+	int n_features;
 
-    const double r_catch_candidate_ = 0.10;//catching candidate -> 0.1 m around wrists. 
-    const double t_upper_ = 1.0;//0.5 sec
-    const double t_lower_ = 0.2;//0.2sec
+	//for prediction
+	std::vector<std::vector<std::vector<double>>> targets, params, targets_save, params_save;//{num of objects, sequence, targets:{frame,label,x,y,z}}, params:{{frame,label,a_x,b_x,c_x,a_y,b_y,c_y,a_z,b_z,c_z}}
+	std::vector<double> params_latest, params_prev_latest;
+	std::vector<rls> instances_rls;//RLS instance (Recursive Least Squares method)
 
+	int label_latest, label_prev;
 
-    const double dt_ = 0.002;
-    const double acceleration_ = omega_max_ur_;
-    std::vector<double> init_joints{ 0.0,0.0, 0.0, 0.0, 0.0, 0.0 };
-
-    Prediction prediction_;
-    const double margin_ = 0.04;//margin to the edge of the working space.
-    const double n_candidates = 5.0;//number of candidates for the catching.
-
-    const double x_max_ = ivpf_main.x_work_[1];
-    const double x_min_ = ivpf_main.x_work_[0];
-    const double y_max_ = ivpf_main.y_work_[1];
-    const double y_min_ = ivpf_main.y_work_[0];
-    const double z_max_ = ivpf_main.z_work_[1];
-    const double z_min_ = ivpf_main.z_work_[0];
-    const double h_cup_ = 0.11;//the height of the cup: 0.11 [m]
-
-    //target information.
-    const bool bool_dynamic_targetAdjustment = true; //dynamically adjust target determination.
-    double lambda_dist, lambda_speed, lambda_human, lambda_dframe, lambda_dist_intra, lambda_dframe_intra;
-    double frame_target_save = 0.0;
-    bool bool_fix_target = false;
-
-    InfoTarget infoTarget_;
-    const double lambda_min_dframe_ = 0.0;
-    const double lambda_max_dframe_ = 1.0;
-    const double lambda_min_dist_ = 1.0;
-    const double lambda_max_dist_ = 1.0;
-    const double lambda_min_human_ = 0.0;
-    const double lambda_max_human_ = 1.0;
-    const double lambda_min_dframe_intra_ = 0.0;
-    const double lambda_max_dframe_intra_ = 1.0;
-    const double lambda_min_dist_intra_ = 1.0;
-    const double lambda_max_dist_intra_ = 1.0;
-    const double threshold_dframe_min_ = 0.1 * (double)FPS;//0.2 second is a threshold.
-    const double threshold_dframe_max_ = 0.8 * (double)FPS;//0.2 second is a threshold.
-    const double threshold_dframe_fix_ = 0.1 * (double)FPS;
-    const double r_update_min_ = 0.10;
-    const double r_update_max_ = 1.0;
-    double r_update_ = 5.0;
-    double frame_finish_fix_ = 0.0;
-
-    const double speed_max_ = (5.0 / (double)FPS);//0.0033[m/frame] -> speed_max_* 300 [fps] -> 1.0 [m/sec]
-    const double lambda_dist_ = 1.0;//distance is most important.
-    const double lambda_speed_ = 1.0;
-    const double lambda_dframe_ = 1.0;
-    const double dist_thresh_ = 1.0;
-    const double dist_target2human_thresh_ = 0.4;
-    const double dframe_thresh_ = (double)FPS;//more than 0.5 sec.
-
-    const bool bool_notDetermine_untilCatch = false;//not determine which object to catch until human catches the ball.
-    const bool bool_use_actual_data = false;//use acutual tracking data when catching objects.
-    const int frame_use_tracking_ = (int)(FPS / 10.0);//0.1 sec before catching.
 
 
 public:
     //storage
-    std::vector<std::vector<std::vector<double>>> seqData_left, seqData_right, kfData_left, kfData_right, saveData_left, saveData_right, saveKFData_left, saveKFData_right; //{num of objects, num of sequence, unit vector}. {frame,label,left,top,width,height}
+    std::vector<std::vector<std::vector<double>>> seqData_left, seqData_right, kfData_left, kfData_right, 
+	saveData_left, saveData_right, saveKFData_left, saveKFData_right; //{num of objects, num of sequence, unit vector}. {frame,label,left,top,width,height}
     std::vector<KalmanFilter2D> kalmanVector_left, kalmanVector_right; //kalman filter instances
     std::vector<LinearExtrapolation2D> extrapolation_left, extrapolation_right;
     //storage for new data
@@ -161,10 +112,20 @@ public:
     std::vector<int> idx_human_catch, idx_robot_catch;//indexes for candidates of human catching. 
     double frame_target_robot;
 
-    Sequence(const std::string& rootDir)
-        : tri(rootDir)
+    Mot(int idx_compensation, int method_prediction, const std::string& rootDir)
+        : idx_compensation(idx_compensation), method_prediction(method_prediction), tri(rootDir)
     {
-        std::cout << "construct Sequence class" << std::endl;
+		if (method_prediction == 0) {//Least square method
+			n_features = 2 + dim_poly_x + dim_poly_y + dim_poly_z;//dim_poly_x,y,z : global parameters for trajectory prediction. see global_parameters.h
+			initial_add_params = std::vector<std::vector<double>>(1, std::vector<double>(n_features, 0.0));
+	
+		}
+		else if (method_prediction == 1) {//Recursive least square method
+			n_features = 2 + dim_poly_x + dim_poly_y + dim_poly_z;
+			initial_add_params = std::vector<std::vector<double>>(1, std::vector<double>(n_features, 0.0));
+		}
+	
+		rls init_rls(dim_poly_x, dim_poly_y, dim_poly_z, forgetting_factor);//initial RLS 
     };
 
     /**
