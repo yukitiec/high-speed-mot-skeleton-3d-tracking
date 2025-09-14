@@ -30,7 +30,6 @@ void YOLODetect_batch::detect(cv::Mat1b& frame, const int frameIndex)
     }
 
     //POST PROCESS
-
     //STEP1 :: divide detections into balls ans boxes
     std::vector<torch::Tensor> rois; //detected rois.(n,6),(m,6) :: including both left and right objects
     std::vector<int> labels;//detected labels.
@@ -69,12 +68,12 @@ void YOLODetect_batch::detect(cv::Mat1b& frame, const int frameIndex)
     }
 
     //send detection data to buffer.
-    Yolo2buffer yolo2buffer;
-    yolo2buffer.rois = rois;
-    yolo2buffer.labels = labels;
-    yolo2buffer.frame = frame;
-    yolo2buffer.frameIndex = frameIndex;
-    q_yolo2buffer.push(yolo2buffer);
+    Yolo2MOT yolo2mot;
+    yolo2mot.rois = rois;
+    yolo2mot.labels = labels;
+    yolo2mot.frame = frame;
+    yolo2mot.frameIndex = frameIndex;
+    q_yolo2mot.push(yolo2mot);
 }
 
 void YOLODetect_batch::preprocessImg(cv::Mat1b& frame, torch::Tensor& imgTensor)
@@ -140,36 +139,20 @@ void YOLODetect_batch::roiSetting(
     }
 }
 
-void YOLODetect_batch::convert2Yolo2seq(
+void YOLODetect_batch::cvtToTrackersYOLO(
     std::vector<cv::Rect2d>& newRoi, std::vector<int>& newClass,
-    std::vector<std::vector<cv::Rect2d>>& posSaver, std::vector<std::vector<int>>& classSaver,
-    const int& frameIndex, std::vector<int>& detectedFrame, std::vector<int>& detectedFrameClass,
-    Yolo2seq& newdata
+    const int& frameIndex, const cv::Mat1b& frame,
+    TrackersYOLO& newdata
 )
 {
-    /*
-     * push detection data to queueLeft
-     */
-
      /* update data */
      /* detection is successful */
     if (!newRoi.empty())
     {
-        // std::cout << "detection succeeded" << std::endl;
-        // save detected data
-        posSaver.push_back(newRoi);
-        classSaver.push_back(newClass);
-        detectedFrame.push_back(frameIndex);
-        detectedFrameClass.push_back(frameIndex);
-
         /* finish initialization */
         newdata.bbox = newRoi;
         newdata.classIndex = newClass;
-        newdata.frame = frameIndex;
-    }
-    /* no object detected -> return class label -1 if TM tracker exists */
-    else
-    {
-        //nothing to do.
+        newdata.frame = frame;
+        newdata.frameIndex = frameIndex;
     }
 }

@@ -24,12 +24,12 @@ public:
         std::cout << "construct Prediction class" << std::endl;
     }
 
-    void predictTargets(int& index, double& depth_target, std::vector<std::vector<double>>& data, std::vector<std::vector<std::vector<double>>>& targets3D);
+    staticvoid predictTargets(int& index, double& depth_target, std::vector<std::vector<double>>& data, std::vector<std::vector<std::vector<double>>>& targets3D);
 
     /**
     * @brief Predict trajectory with RLS (Recursive Least Squares) method.
     */
-    std::vector<Eigen::VectorXd> predictTargets_rls(int& index, double& depth_target, std::vector<std::vector<double>>& data, std::vector<rls>& instances_rls, std::vector<std::vector<std::vector<double>>>& targets3D);
+    staticstd::vector<Eigen::VectorXd> predictTargets_rls(int& index, double& depth_target, std::vector<std::vector<double>>& data, std::vector<rls>& instances_rls, std::vector<std::vector<std::vector<double>>>& targets3D);
 
 
     /**
@@ -39,7 +39,7 @@ public:
     * @param[in] instances_rls RLS instances. (x,y,z)
     * @param[out] targets3D storage for target 3D points.{frame,label,x,y,z,nx,ny,nz}}
     */
-    void calculate_target(double& depth_target, Seq2robot& params, std::vector<double>& target);
+    static void calculate_target(double& depth_target, Seq2robot& params, std::vector<double>& target);
 
     /**
     * @brief Function to perform least squares fitting using OpenCV
@@ -47,7 +47,7 @@ public:
     * @param[in] index : which parameters to use.
     * @return coefficients {a,b,c}. a*t^2+b*t+c
     */
-    cv::Vec3d fitQuadratic(const std::vector<std::vector<double>>& data, int index);
+    static cv::Vec3d fitQuadratic(const std::vector<std::vector<double>>& data, int index);
 
     /**
     * @brief calculate target frame.
@@ -55,15 +55,15 @@ public:
     * @param[in] depth_target target depth.
     * @return target frame.
     */
-    double calculateTargetFrame(const cv::Vec3d& coef, const double& depth_target, double& frame_latest);
+    staticdouble calculateTargetFrame(const cv::Vec3d& coef, const double& depth_target, double& frame_latest);
 
-    double calculateTargetFrame_rls(const Eigen::VectorXd& coef, const double& depth_target, double& frame_latest);
+    static double calculateTargetFrame_rls(const Eigen::VectorXd& coef, const double& depth_target, double& frame_latest);
 
-    cv::Vec3d linearRegression(int& n_points_predict, std::vector<std::vector<double>>& data);
+    static cv::Vec3d linearRegression(int& n_points_predict, std::vector<std::vector<double>>& data);
 
-    cv::Vec3d linearRegressionY(int& n_points_predict, std::vector<std::vector<double>>& data);
+    static cv::Vec3d linearRegressionY(int& n_points_predict, std::vector<std::vector<double>>& data);
 
-    void curveFitting(int& n_points_predict, std::vector<std::vector<double>>& data, std::vector<double>& result);
+    static void curveFitting(int& n_points_predict, std::vector<std::vector<double>>& data, std::vector<double>& result);
 };
 
 #endif

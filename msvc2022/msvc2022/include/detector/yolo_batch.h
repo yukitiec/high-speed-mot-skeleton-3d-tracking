@@ -101,11 +101,10 @@ public:
     /**
     * @brief push detect results to a que.
     */
-    static void convert2Yolo2seq(
+    static void cvtToTrackersYOLO(
         std::vector<cv::Rect2d>& newRoi, std::vector<int>& newClass,
-        std::vector<std::vector<cv::Rect2d>>& posSaver, std::vector<std::vector<int>>& classSaver,
-        const int& frameIndex, std::vector<int>& detectedFrame, std::vector<int>& detectedFrameClass,
-        Yolo2seq& newdata
+        const int& frameIndex, const cv::Mat1b& frame,
+        TrackersYOLO& newdata
     );
 };
 

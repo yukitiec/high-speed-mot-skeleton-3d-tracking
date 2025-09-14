@@ -50,7 +50,11 @@ public:
 			iss >> key >> value;
 			if (key == "PI") PI = std::stod(value);
 			else if (key == "FPS") FPS = std::stoi(value);
-			else if (key == "threshold_mosse") threshold_mosse = std::stod(value);
+			else if (key == "psr_threshold_mosse") psr_threshold_mosse = std::stod(value);
+			else if (key == "score_threshold_template_matching") score_threshold_template_matching = std::stod(value);
+			else if (key == "K_SIGMA") K_SIGMA = std::stod(value);
+			else if (key == "N_WARMUP") N_WARMUP = std::stoi(value);
+			else if (key == "MAX_SKIP") MAX_SKIP = std::stoi(value);
 			else if (key == "bool_skip") bool_skip = std::stod(value);
 			else if (key == "COUNTER_VALID") COUNTER_VALID = std::stoi(value);
 			else if (key == "COUNTER_LOST") COUNTER_LOST = std::stoi(value);
@@ -59,6 +63,11 @@ public:
 			else if (key == "boolGroundTruth") boolGroundTruth = std::stod(value);
 			else if (key == "path_to_video_left") path_to_video_left = value;
 			else if (key == "path_to_video_right") path_to_video_right = value;
+			//_mode_duplication.
+			//0: no duplication, 1: duplication with IoU, 2: duplication with IoU and velocity.
+			//3: duplication with IoU and velocity, and augmentation in merging trackers.
+			else if (key == "mode_duplication") mode_duplication = std::stoi(value);
+			else if (key == "bool_TBD") bool_TBD = std::stod(value);
 		}
 		file.close();
 	}
@@ -130,11 +139,14 @@ extern const int dim_poly_y;//quadratic regression.
 extern const int dim_poly_z;//linear regression.
 
 //YOLO -> MOT.
-extern std::queue<Yolo2buffer> q_yolo2buffer;
+extern std::queue<Yolo2MOT> q_yolo2mot;
 //MOT -> Tracking.
 extern std::queue<Trackers> q_mot2tracking_left, q_mot2tracking_right;
 //Tracking -> MOT.
-extern std::queue<Trackers> q_tracking2mot_left, q_tracking2mot_right;
+extern std::queue<Trackers2MOT> q_tracking2mot_left, q_tracking2mot_right;
+//Finish flag from MOT and YOLO.
+
+extern std::queue<bool> q_finish_mot,q_finish_tracking, q_finish_yolo;
 
 // Yolo2seq
 extern std::queue<Yolo2seq> q_yolo2seq_left, q_yolo2seq_right;//extern is for declaration for the compiler to look for the definition.

@@ -42,7 +42,7 @@ public:
         std::cout << "construct Matching class" << std::endl;
     }
 
-    void main(std::vector<std::vector<std::vector<double>>>& seqData_left, std::vector<std::vector<std::vector<double>>>& seqData_right,
+    static void main(std::vector<std::vector<std::vector<double>>>& seqData_left, std::vector<std::vector<std::vector<double>>>& seqData_right,
         const double& oY_left, const double& oY_right, std::vector<std::vector<int>>& matching);
 
     int arrangeData(std::vector<std::vector<std::vector<double>>>& seqData, std::vector<std::vector<double>>& data_ball, std::vector<std::vector<double>>& data_box,

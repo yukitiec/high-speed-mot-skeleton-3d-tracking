@@ -13,7 +13,7 @@
 #include "utils/extrapolation.h"
 #include "utils/RLS.h"
 
-class Mot
+class MOT
 {
 private:
 
@@ -31,6 +31,14 @@ private:
     const double Cost_max = 1000.0;
     const double Cost_params_max = 0.0;
     const double lambda_rmse_ = 2.0;
+
+	//storage.
+	Trackers2MOT trackers2mot_left, trackers2mot_right;
+	Yolo2MOT yolo2mot;
+	TrackersYOLO trackersYOLO_left, trackersYOLO_right;
+	TrackersMOT newData_left, newData_right, trackersMOT_left, trackersMOT_right;
+	cv::Mat1b frameYolo;
+	int frameIndex;
 
     //the minimum number of updating predictions.
     const int counter_update_params_ = 3;
@@ -57,12 +65,8 @@ private:
 	std::vector<std::vector<int>> seqClasses_left, seqClasses_right; // storage for sequential classes
 
 	//Yolo2sequence
-	Yolo2buffer yolo2buffer;
 	std::vector<torch::Tensor> rois;
 	std::vector<int> labels;
-	cv::Mat1b frame;
-	int frameIndex;
-	Yolo2seq newdata_left, newdata_right;
 	std::vector<cv::Rect2d> roi_left, roi_right;
 	std::vector<int> class_left, class_right;
 
@@ -106,7 +110,7 @@ public:
     std::vector<int> idx_human_catch, idx_robot_catch;//indexes for candidates of human catching. 
     double frame_target_robot;
 
-    Mot(int idx_compensation=0, int method_prediction=0, int n_max_highspeed=10, const std::string& rootDir="")
+    MOT(int idx_compensation=0, int method_prediction=0, int n_max_highspeed=10, const std::string& rootDir="")
         : idx_compensation(idx_compensation), method_prediction(method_prediction), _n_max_highspeed(n_max_highspeed), tri(rootDir)
     {
 		if (method_prediction == 0) {//Least square method

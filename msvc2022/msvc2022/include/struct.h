@@ -9,12 +9,20 @@
 #include "tracker/template_matching.h"
 
 //Yolo to Tracker
-struct Yolo2seq {
-    int frame;
+struct Yolo2MOT {
+    std::vector<torch::Tensor> rois; //detected rois.(n,6),(m,6) :: including both left and right objects
+    std::vector<int> labels;//detected labels.
+    cv::Mat1b frame;
+    int frameIndex;
+};
+//Trackers in YOLO
+struct TrackersYOLO {
+    int frameIndex;
+	cv::Mat1b frame;
     std::vector<int> classIndex;
     std::vector<cv::Rect2d> bbox;
 };
-
+//TrackerInfo in tracking.
 struct TrackerInfo{
 	cv::Ptr<cv::mytracker::TrackerMOSSE> mosse;
 	cv::Ptr<TemplateMatching> template_matching;//have a template image internally.
@@ -23,26 +31,24 @@ struct TrackerInfo{
     cv::Point2d vel; //previous velocity
 	int n_notMove; //number of not move
 };
-
+//All trackers.
 struct Trackers {
     std::vector<int> classIndex;
-	std::vector<int> index_highspeed;//index for high speed tracking
+	std::vector<int> index_highspeed; //index for high speed tracking
 	std::vector<TrackerInfo> trackerInfo;
-    cv::Mat1b previousImg;
+    cv::Mat1b previousImg; 
 };
-
+//Trackers in MOT.
+struct Trackers2MOT{
+	std::vector<int> success_flags;
+	Trackers trackers;
+}
 //Tracker to Sequence
-struct Tracker2seq {
+struct TrackersMOT {
     int frameIndex;
     std::vector<int> classIndex;
     std::vector<cv::Rect2d> bbox;
-};
-
-struct Yolo2buffer {
-    std::vector<torch::Tensor> rois; //detected rois.(n,6),(m,6) :: including both left and right objects
-    std::vector<int> labels;//detected labels.
-    cv::Mat1b frame;
-    int frameIndex;
+	std::vector<KalmanFilter> kalmanFilter;
 };
 
 struct InfoTarget {
