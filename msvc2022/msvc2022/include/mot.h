@@ -21,6 +21,7 @@ private:
     int idx_compensation = 0;//0:kalman filter, 1:linear extrapolation.
     //trajectory predictioni
     int method_prediction = 0;//0:ordinary least square method. 1: recursive least squares method.
+	int _n_max_highspeed = 10;//the maximum number of high speed tracking.
 
     std::vector<std::vector<double>> defaultVector{ {0.0} }; //for initializing kalman filter
     //matching
@@ -105,8 +106,8 @@ public:
     std::vector<int> idx_human_catch, idx_robot_catch;//indexes for candidates of human catching. 
     double frame_target_robot;
 
-    Mot(int idx_compensation, int method_prediction, const std::string& rootDir)
-        : idx_compensation(idx_compensation), method_prediction(method_prediction), tri(rootDir)
+    Mot(int idx_compensation=0, int method_prediction=0, int n_max_highspeed=10, const std::string& rootDir="")
+        : idx_compensation(idx_compensation), method_prediction(method_prediction), _n_max_highspeed(n_max_highspeed), tri(rootDir)
     {
 		if (method_prediction == 0) {//Least square method
 			n_features = 2 + dim_poly_x + dim_poly_y + dim_poly_z;//dim_poly_x,y,z : global parameters for trajectory prediction. see global_parameters.h

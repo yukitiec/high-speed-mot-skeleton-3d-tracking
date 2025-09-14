@@ -21,11 +21,12 @@ struct TrackerInfo{
 	cv::Rect2d bbox;
 	double scale_searcharea; //scale ratio of search area against bbox
     cv::Point2d vel; //previous velocity
-	int num_notMove;//number of not move
-}
+	int n_notMove; //number of not move
+};
 
-struct Tracker2tracker {
+struct Trackers {
     std::vector<int> classIndex;
+	std::vector<int> index_highspeed;//index for high speed tracking
 	std::vector<TrackerInfo> trackerInfo;
     cv::Mat1b previousImg;
 };

@@ -21,7 +21,7 @@ bool TemplateMatching::init(const cv::Mat& image, cv::Rect2d& boundingBox)
 	return true;
 }
 
-double TemplateMatching::update(const cv::Mat& image, cv::Rect2d& boundingBox, cv::Point2d& previous_move, bool transport)
+bool TemplateMatching::update(const cv::Mat& image, cv::Rect2d& boundingBox)
 {
 
 	//create result image.
@@ -78,49 +78,34 @@ double TemplateMatching::update(const cv::Mat& image, cv::Rect2d& boundingBox, c
 				_scores.z -= 1;
 				
 				if (MATCHINGMETHOD == cv::TM_SQDIFF_NORMED)//diff. lower is better.
-					return _scoreThreshold+1.0;//return failure to update.
+					return false;//return failure to update.
 				else//correlation coefficient or cross correlation. higher is better.
-					return _scoreThreshold-1.0;//return failure to update.
+					return false;//return failure to update.
 			}
 		}
 
+		cv::Point matchLoc;
 		if (MATCHINGMETHOD == cv::TM_SQDIFF_NORMED)
-		{
-			cv::Point matchLoc = minLoc;
-			//Update bounding box.
-			boundingBox = cv::Rect2d(minLoc.x, minLoc.y, width_template, height_template);
-
-			//Update template image.
-			cv::Rect roi(
-				static_cast<int>(std::round(boundingBox.x)),
-				static_cast<int>(std::round(boundingBox.y)),
-				static_cast<int>(std::round(boundingBox.width)),
-				static_cast<int>(std::round(boundingBox.height))
-			);
-			// Ensure ROI is within image bounds
-			roi = roi & cv::Rect(0, 0, image.cols, image.rows);
-			_templateImg = image(roi);
-
-			return score;
-		}
+			matchLoc = minLoc;
 		else
-		{
-			cv::Point matchLoc = maxLoc;
+			matchLoc = maxLoc;
+
 			//Update bounding box.
-			boundingBox = cv::Rect2d(maxLoc.x, maxLoc.y, width_template, height_template);
+		boundingBox = cv::Rect2d(matchLoc.x, matchLoc.y, width_template, height_template);
 
-			//Update template image.
-			cv::Rect roi(
-				static_cast<int>(std::round(boundingBox.x)),
-				static_cast<int>(std::round(boundingBox.y)),
-				static_cast<int>(std::round(boundingBox.width)),
-				static_cast<int>(std::round(boundingBox.height))
-			);
-			// Ensure ROI is within image bounds
-			roi = roi & cv::Rect(0, 0, image.cols, image.rows);
-			_templateImg = image(roi);
+		//Update template image.
+		cv::Rect roi(
+			static_cast<int>(std::round(boundingBox.x)),
+			static_cast<int>(std::round(boundingBox.y)),
+			static_cast<int>(std::round(boundingBox.width)),
+			static_cast<int>(std::round(boundingBox.height))
+		);
+		// Ensure ROI is within image bounds
+		roi = roi & cv::Rect(0, 0, image.cols, image.rows);
+		_templateImg = image(roi);
 
-			return score;
-		}
+		return true;
 	}
+	else
+		return false;
 }

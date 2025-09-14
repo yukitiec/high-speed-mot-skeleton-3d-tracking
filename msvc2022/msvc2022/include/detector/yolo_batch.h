@@ -92,7 +92,7 @@ public:
     * Third : if not match : adapt as a new templates and add after TM data
     * Fourth : return all class indexes including -1 (not tracked one) for maintainig data consistency
     */
-    void roiSetting(
+    static void roiSetting(
         std::vector<torch::Tensor>& detectedBoxes, std::vector<int>& labels,
         std::vector<cv::Rect2d>& newRoi_left, std::vector<int>& newClass_left,
         std::vector<cv::Rect2d>& newRoi_right, std::vector<int>& newClass_right
@@ -101,7 +101,7 @@ public:
     /**
     * @brief push detect results to a que.
     */
-    void convert2Yolo2seq(
+    static void convert2Yolo2seq(
         std::vector<cv::Rect2d>& newRoi, std::vector<int>& newClass,
         std::vector<std::vector<cv::Rect2d>>& posSaver, std::vector<std::vector<int>>& classSaver,
         const int& frameIndex, std::vector<int>& detectedFrame, std::vector<int>& detectedFrameClass,

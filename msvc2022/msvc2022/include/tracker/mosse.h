@@ -62,9 +62,9 @@ namespace cv {
             * @brief Update Correlation filter.
             * @param[in] image Source image
             * @param[in,out] boundingBox Output Bounding box. If "transport" argument is true, the search position moves to the "boundingBox" position instead of the previous detected point
-            * @return PSR value. If PSR is very small, it failed detection.
+            * @return Success flag. If PSR is very small, it failed detection.
             */
-            double update(const Mat& image, Rect2d& boundingBox, Point2d& previous_move);
+            bool update(const Mat& image, Rect2d& boundingBox);
 
             /**
             * @brief Make TrackerMOSSE object

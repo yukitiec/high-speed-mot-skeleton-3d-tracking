@@ -147,7 +147,7 @@ namespace cv {
             return true;
         }
 
-        double TrackerMOSSE::update(const Mat& image, Rect2d& boundingBox, Point2d& previous_move) {
+        bool TrackerMOSSE::update(const Mat& image, Rect2d& boundingBox) {
             if (H.empty())  // not initialized
                 return false;
 
@@ -166,7 +166,7 @@ namespace cv {
             double PSR = correlate(image_sub, delta_xy);
 
             if (PSR < _psrThreshold)
-                return PSR;//failure to update.
+                return false;//failure to update.
 
 			//update scores.
 			double mu_previous = _scores.x;
@@ -192,7 +192,7 @@ namespace cv {
 					_scores.y = var_previous;
 					_scores.z -= 1;
 					
-					return 0.0;//return failure to update.
+					return false;//return failure to update.
 				}
             }
 				
@@ -221,7 +221,7 @@ namespace cv {
 			// Internally, Rect2d always stores (x=left, y=top, width=right-left, height=bottom-top).
             boundingBox = Rect2d(x-0.5*w, y-0.5*h, w, h);
    
-            return PSR;
+            return true;
         }
 
     }  // namespace mytracker

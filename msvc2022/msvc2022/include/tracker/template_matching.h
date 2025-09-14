@@ -20,12 +20,12 @@ private:
     double _K_SIGMA = 2.0;//threshold for skipping condition. MU-_K_SIGMA*std region.
     double _N_WARMUP = 10;
 	int _MAX_SKIP = 10;
-	cv::Point3d _scores = cv::Point3d(0.0,0.0,0.0);//mean,std,N_samples
 public:
 	cv::Mat _templateImg;//save template image internally.
+	cv::Point3d _scores = cv::Point3d(0.0,0.0,0.0);//mean,std,N_samples
 
 	/// Constructor
-	TemplateMatching(double scoreThreshold=0.7, double K_SIGMA=1.0, double N_WARMUP=10,int MAX_SKIP=10,std::string method="sqdiff_normed",bool bool_skip=false) 
+	TemplateMatching(double scoreThreshold=0.7, double K_SIGMA=1.0, double N_WARMUP=10,int MAX_SKIP=10,std::string method="sqdiff",bool bool_skip=false) 
 	: _scoreThreshold(scoreThreshold), _K_SIGMA(K_SIGMA), _N_WARMUP(N_WARMUP), _MAX_SKIP(MAX_SKIP), _bool_skip(bool_skip) 
 	{
 
@@ -62,8 +62,7 @@ public:
 	* @param[in] psrThreshold If PSR is smaller than this, do not update filter
 	* @return PSR value. If PSR is very small, it failed detection.
 	*/
-	double update(const cv::Mat& image, cv::Rect2d& boundingBox, cv::Point2d& previous_move, 
-		bool transport = false);
+	bool update(const cv::Mat& image, cv::Rect2d& boundingBox);
 
 	/**
 	* @brief Make TrackerMOSSE object
