@@ -64,8 +64,12 @@ void Tracking::main(std::queue<bool>& q_startTracker)
 
 					//send updated trackers to MOT.
 					Trackers2MOT trackers2mot_left, trackers2mot_right;
+					//set frame index.
+					trackers2mot_left.frameIndex = frameIndex;
 					trackers2mot_left.success_flags = success_flags_left;
 					trackers2mot_left.trackers = trackers_left;
+					//set success flags.
+					trackers2mot_right.frameIndex = frameIndex;
 					trackers2mot_right.success_flags = success_flags_right;
 					trackers2mot_right.trackers = trackers_right;
 					//Pop before push.

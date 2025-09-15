@@ -12,6 +12,7 @@
 struct Yolo2MOT {
     std::vector<torch::Tensor> rois; //detected rois.(n,6),(m,6) :: including both left and right objects
     std::vector<int> labels;//detected labels.
+    std::vector<double> scores;//detected scores.
     cv::Mat1b frame;
     int frameIndex;
 };
@@ -21,6 +22,7 @@ struct TrackersYOLO {
 	cv::Mat1b frame;
     std::vector<int> classIndex;
     std::vector<cv::Rect2d> bbox;
+    std::vector<double> scores;
 };
 //TrackerInfo in tracking.
 struct TrackerInfo{
@@ -40,16 +42,27 @@ struct Trackers {
 };
 //Trackers in MOT.
 struct Trackers2MOT{
+	int frameIndex;
 	std::vector<int> success_flags;
 	Trackers trackers;
 }
-//Tracker to Sequence
+
+//Trackers info in MOT.
 struct TrackersMOT {
-    int frameIndex;
+	int frameIndex;
     std::vector<int> classIndex;
     std::vector<cv::Rect2d> bbox;
 	std::vector<KalmanFilter> kalmanFilter;
+	std::vector<int> index_highspeed;
 };
+
+struct Trackers_sequence{
+	std::vector<KalmanFilter> kalmanFilter;
+	std::vector<TrackersMOT> trackersMOT;
+	std::vector<int> index_highspeed;
+	std::vector<int> classIndex;
+}
+
 
 struct InfoTarget {
     double delta_frame;//frame by catching.

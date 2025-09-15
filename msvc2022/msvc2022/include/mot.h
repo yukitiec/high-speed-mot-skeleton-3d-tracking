@@ -36,7 +36,8 @@ private:
 	Trackers2MOT trackers2mot_left, trackers2mot_right;
 	Yolo2MOT yolo2mot;
 	TrackersYOLO trackersYOLO_left, trackersYOLO_right;
-	TrackersMOT newData_left, newData_right, trackersMOT_left, trackersMOT_right;
+	TrackersMOT newData_left, newData_right;
+	Trackers_sequence trackers_mot_left, trackers_mot_right;
 	cv::Mat1b frameYolo;
 	int frameIndex;
 
@@ -45,8 +46,6 @@ private:
 
     //hungarian algorithm
     HungarianAlgorithm HungAlgo;
-    Utility utSeq; //check data
-    Prediction prediction;
 
     //observation
     Eigen::Vector2d observation;
@@ -66,9 +65,11 @@ private:
 
 	//Yolo2sequence
 	std::vector<torch::Tensor> rois;
+	std::vector<double> _scores;
 	std::vector<int> labels;
 	std::vector<cv::Rect2d> roi_left, roi_right;
 	std::vector<int> class_left, class_right;
+	std::vector<double> scores_left, scores_right;
 
 	//for triangulation
 	std::vector<std::vector<std::vector<double>>> data_3d, data_3d_save; //{num of objects, sequential, { frameIndex,label, X,Y,Z }}

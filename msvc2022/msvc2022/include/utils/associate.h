@@ -6,10 +6,14 @@
 #include "../stdafx.h"
 #include "../struct.h"
 #include "../global_parameters.h"
+//for kalmanfilter and association.
 #include "../utils/kalmanfilter.h"
 #include "../utils/extrapolation.h"
 #include "../utils/hungarian.h"
 #include "../utils/matching.h"
+//for initializing trackers.
+#include "../tracker/mosse.h"
+#include "../tracker/template_matching.h"
 
 class Associate
 {
@@ -35,6 +39,9 @@ private:
     bool bool_comparePSR = false; //compare by PSR 
 
 public:
+	//for merging trackers.
+	TrackersMOT trackersMOT_association;//for association with YOLO.
+
     Associate()
 	{
 		std::cout << "construct Associate" << std::endl;
@@ -53,13 +60,18 @@ public:
     * @brief match trackers and update Kalman filter.
     */
    static void organize(
-	Yolo2seq& newData, bool bool_left,
-	std::vector<std::vector<std::vector<double>>>& seqData, std::vector<std::vector<std::vector<double>>>& kfData,
-	std::vector<KalmanFilter2D>& kalmanVector, std::vector<LinearExtrapolation2D>& extrapolation,
-	std::vector<std::vector<std::vector<double>>>& saveData, std::vector<std::vector<std::vector<double>>>& saveKFData,
-	std::vector<int>& index_delete, std::queue<std::vector<std::vector<std::vector<double>>>>& q_seq2tri
+	Trackers2MOT& trackers2mot,
+	TrackersYOLO& trackersYOLO,
+	TrackersMOT& trackersMOT
 	);
 
+	/**
+	* @brief merge trackers2mot to trackers_sequence, and create trackersMOT.
+	*/
+	static void mergeTracking_MOT(
+		Trackers2MOT& trackers2mot,
+		TrackersMOT& trackersMOT
+	);
 	/**
 	* @brief match trackers.
 	*/

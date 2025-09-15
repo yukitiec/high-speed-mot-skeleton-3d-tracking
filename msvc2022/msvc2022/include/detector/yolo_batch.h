@@ -95,7 +95,8 @@ public:
     static void roiSetting(
         std::vector<torch::Tensor>& detectedBoxes, std::vector<int>& labels,
         std::vector<cv::Rect2d>& newRoi_left, std::vector<int>& newClass_left,
-        std::vector<cv::Rect2d>& newRoi_right, std::vector<int>& newClass_right
+        std::vector<cv::Rect2d>& newRoi_right, std::vector<int>& newClass_right,
+		std::vector<double>& newScore_left, std::vector<double>& newScore_right
     );
 
     /**
@@ -103,6 +104,7 @@ public:
     */
     static void cvtToTrackersYOLO(
         std::vector<cv::Rect2d>& newRoi, std::vector<int>& newClass,
+		std::vector<double>& newScore,
         const int& frameIndex, const cv::Mat1b& frame,
         TrackersYOLO& newdata
     );

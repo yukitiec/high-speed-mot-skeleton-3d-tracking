@@ -1,14 +1,45 @@
 #include "../../include/utils/associate.h"
 
-
+/*
+*@param[in] Trackers2MOT {
+	std::vector<int> success_flags;
+	Trackers trackers;
+}
+* @param[in] TrackersYOLO {
+    int frameIndex;
+	cv::Mat1b frame;
+    std::vector<int> classIndex;
+    std::vector<cv::Rect2d> bbox;
+};
+* @param[in] TrackersMOT {
+    int frameIndex;
+    std::vector<int> classIndex;
+    std::vector<cv::Rect2d> bbox;
+	std::vector<KalmanFilter> kalmanFilter;
+};
+* @param[in] Trackers_sequence{
+	std::vector<KalmanFilter> kalmanFilter;
+	std::vector<TrackersMOT> trackersMOT;
+}
+*/
 void Associate::organize(
-    Yolo2seq& newData, bool bool_left,
-    std::vector<std::vector<std::vector<double>>>& seqData, std::vector<std::vector<std::vector<double>>>& kfData,
-    std::vector<KalmanFilter2D>& kalmanVector, std::vector<LinearExtrapolation2D>& extrapolation,
-    std::vector<std::vector<std::vector<double>>>& saveData, std::vector<std::vector<std::vector<double>>>& saveKFData,
-    std::vector<int>& index_delete, std::queue<std::vector<std::vector<std::vector<double>>>>& q_seq2tri
+	Trackers2MOT& trackers2mot,
+	TrackersYOLO& trackersYOLO,
+	TrackersMOT& trackersMOT
 )
 {
+	//Step1 :: Merge trackers2mot to trackers_sequence, and create trackersMOT.
+	mergeTracking_MOT(trackers2mot, trackersMOT);
+
+	//Step2 :: Update TrackersMOT by comparing trackersYOLO with trackersMOT using success_flags if exists.
+	if (!trackersYOLO.bbox.empty()) {//YOLO data is avaiable.
+		mergeTracking_YOLO(trackersYOLO, trackersMOT);
+	}
+
+	//Step3 ::Add trackersMOT to trackers_sequence.
+
+	//Step4 :: Send trackersMOT to tracking module.
+
     //organize data
     std::vector<cv::Rect2d> newRoi = newData.bbox;
     std::vector<int> newLabel = newData.classIndex;
@@ -51,6 +82,112 @@ void Associate::organize(
         //push latest data for match objects between 2 cameras.
         //q_seq2tri.push(seqData);
     }
+}
+
+/*
+* @brief merge trackers2mot to trackersMOT.
+*@param[in] Trackers2MOT {
+	int frameIndex;
+	std::vector<int> success_flags;
+	Trackers trackers;
+}
+
+* @param[out] TrackersMOT {//for the latest data.
+    int frameIndex;
+    std::vector<int> classIndex;
+    std::vector<cv::Rect2d> bbox;//for each object.
+	std::vector<KalmanFilter> kalmanFilter;
+};
+*/
+void Associate::mergeTracking_MOT(
+	Trackers2MOT& trackers2mot,
+	TrackersMOT& trackersMOT
+)
+{
+	if (!trackers2mot.success_flags.empty()) {
+		//struct Trackers {
+		//	std::vector<int> classIndex;
+		//	std::vector<int> index_highspeed; //index for high speed tracking
+		//	std::vector<TrackerInfo> trackerInfo;
+		//	cv::Mat1b previousImg; 
+		//};
+		//struct TrackerInfo{
+		//	cv::Ptr<cv::mytracker::TrackerMOSSE> mosse;
+		//	cv::Ptr<TemplateMatching> template_matching;//have a template image internally.
+		//	cv::Rect2d bbox;
+		//	double scale_searcharea; //scale ratio of search area against bbox
+		//	cv::Point2d vel; //previous velocity
+		//	int n_notMove; //number of not move
+		//};
+		int frameIndex_tracking = trackers2mot.frameIndex;//extract the frame index of the tracking result.
+		for (int i = 0; i < trackers2mot.success_flags.size(); i++) {//for each high-speed tracking result.
+			if (trackers2mot.success_flags[i]) {//succeeded.
+				Trackers trackers = trackers2mot.trackers;
+				int index_object = trackers.index_highspeed[i];//get the index of the object.
+				TrackerInfo tracker = trackers.trackerInfo[index_object];//extract the latest tracker information..
+                //extract the current bbox.
+				cv::Rect2d bbox = tracker.bbox;
+				cv::Point2d vel = tracker.vel;
+				//update the bbox.
+				trackersMOT.bbox[index_object] = bbox;
+				//update Kalman filter with the latest bbox and time.
+				//prediction step.
+				bool success = trackersMOT.kalmanFilter[index_object].predict(frameIndex_tracking); //predict kalman filter
+				//update step.
+				Eigen::VectorXd measurement = Eigen::VectorXd::Zero(4);
+				measurement(0) = bbox.x + bbox.width / 2.0;
+				measurement(1) = bbox.y + bbox.height / 2.0;
+				measurement(2) = vel.x;
+				measurement(3) = vel.y;
+				trackersMOT.kalmanFilter[index_object].update(measurement);
+			}
+			else{//tracking is failed. -> if Kalman filter is working, 
+				Trackers trackers = trackers2mot.trackers;
+				int index_object = trackers.index_highspeed[i];//get the index of the object.
+				TrackerInfo tracker = trackers.trackerInfo[index_object];//extract the latest tracker information..
+				//predict Kalman filter.
+				if (trackersMOT.kalmanFilter[index_object].counter_update >= GP::COUNTER_VALID) {//valid trackers.
+					Eigen::VectorXd prediction = trackersMOT.kalmanFilter[index_object].predict_only(frameIndex_tracking); //predict kalman filter
+					//update the bbox's left and top with prediction.
+					cv::Rect2d bbox = tracker.bbox;
+					bbox.x = prediction(0) - bbox.width / 2.0;
+					bbox.y = prediction(1) - bbox.height / 2.0;
+					//update the bbox.
+					trackers2mot.trackers.trackerInfo[index_object].bbox = bbox;
+					//update the velocity.
+					trackers2mot.trackers.trackerInfo[index_object].vel = cv::Point2d(prediction(2), prediction(3));				
+				}
+			}
+		}
+		trackersMOT.frameIndex = frameIndex_tracking;//update the frame index.
+	}
+	else{//high-speed tracking is not working.
+		//skinp merging.
+	}
+}
+
+/* @param[in] TrackersYOLO {
+    int frameIndex;
+	cv::Mat1b frame;
+    std::vector<int> classIndex;
+    std::vector<cv::Rect2d> bbox;
+    std::vector<double> scores;
+};
+* @param[out] TrackersMOT {//for the latest data.
+    int frameIndex;
+    std::vector<int> classIndex;
+    std::vector<cv::Rect2d> bbox;//for each object.
+	std::vector<KalmanFilter> kalmanFilter;
+};
+*/
+void Associate::mergeTracking_YOLO(
+	TrackersYOLO& trackersYOLO,
+	TrackersMOT& trackersMOT
+)
+{
+	if (!trackersYOLO.bbox.empty()) {//YOLO data is avaiable.
+		int frameIndex_tracking = trackersYOLO.frameIndex;//extract the frame index of the tracking result.
+	}
 }
 
 void Associate::matching(

@@ -33,6 +33,7 @@ void YOLODetect_batch::detect(cv::Mat1b& frame, const int frameIndex)
     //STEP1 :: divide detections into balls ans boxes
     std::vector<torch::Tensor> rois; //detected rois.(n,6),(m,6) :: including both left and right objects
     std::vector<int> labels;//detected labels.
+    std::vector<double> scores;//detected scores.
     //auto start = std::chrono::high_resolution_clock::now();
     torch::Tensor preds_good = preds.select(2, 4) > ConfThreshold; // Extract the high score detections. :: xc is "True" or "False"
     torch::Tensor x0 = preds.index_select(1, torch::nonzero(preds_good[0]).select(1, 0)); // box, x0.shape : (1,n,6) : n: number of candidates
@@ -49,9 +50,11 @@ void YOLODetect_batch::detect(cv::Mat1b& frame, const int frameIndex)
         bbox[1] = std::max(bbox[1].item<double>(), 0.0);//top
         bbox[2] = std::min(bbox[2].item<double>(), (double)yoloWidth);//right
         bbox[3] = std::min(bbox[3].item<double>(), (double)yoloHeight);//bottom
+		score = pred[4].item<double>();//score
         label = pred[5].item<int>();//label
         rois.push_back(bbox);
         labels.push_back(label);
+        scores.push_back(score);
     }
     else if (size >= 2) {
         for (int i = 0; i < size; i++) {
@@ -61,9 +64,11 @@ void YOLODetect_batch::detect(cv::Mat1b& frame, const int frameIndex)
             bbox[1] = std::max(bbox[1].item<double>(), 0.0);//top
             bbox[2] = std::min(bbox[2].item<double>(), (double)yoloWidth);//right
             bbox[3] = std::min(bbox[3].item<double>(), (double)yoloHeight);//bottom
+            score = pred[4].item<double>();//score
             label = pred[5].item<int>();//label
             rois.push_back(bbox);
             labels.push_back(label);
+            scores.push_back(score);
         }
     }
 
@@ -71,6 +76,7 @@ void YOLODetect_batch::detect(cv::Mat1b& frame, const int frameIndex)
     Yolo2MOT yolo2mot;
     yolo2mot.rois = rois;
     yolo2mot.labels = labels;
+    yolo2mot.scores = scores;
     yolo2mot.frame = frame;
     yolo2mot.frameIndex = frameIndex;
     q_yolo2mot.push(yolo2mot);
@@ -94,7 +100,8 @@ void YOLODetect_batch::preprocessImg(cv::Mat1b& frame, torch::Tensor& imgTensor)
 void YOLODetect_batch::roiSetting(
     std::vector<torch::Tensor>& detectedBoxes, std::vector<int>& labels,
     std::vector<cv::Rect2d>& newRoi_left, std::vector<int>& newClass_left,
-    std::vector<cv::Rect2d>& newRoi_right, std::vector<int>& newClass_right
+    std::vector<cv::Rect2d>& newRoi_right, std::vector<int>& newClass_right,
+	std::vector<double>& newScore_left, std::vector<double>& newScore_right
 )
 {
     // std::cout << "bboxesYolo size=" << detectedBoxes.size() << std::endl;
@@ -123,12 +130,14 @@ void YOLODetect_batch::roiSetting(
             {
                 newRoi_left.emplace_back(left, top, (right - left), (bottom - top));
                 newClass_left.push_back(labels[i]);
+                newScore_left.push_back(scores[i]);
             }
             //right
             else if (left >= originalWidth)
             {
                 newRoi_right.emplace_back(left - originalWidth, top, (right - left), (bottom - top));
                 newClass_right.push_back(labels[i]);
+                newScore_right.push_back(scores[i]);
             }
         }
     }
@@ -141,6 +150,7 @@ void YOLODetect_batch::roiSetting(
 
 void YOLODetect_batch::cvtToTrackersYOLO(
     std::vector<cv::Rect2d>& newRoi, std::vector<int>& newClass,
+	std::vector<double>& newScore,
     const int& frameIndex, const cv::Mat1b& frame,
     TrackersYOLO& newdata
 )
@@ -152,6 +162,7 @@ void YOLODetect_batch::cvtToTrackersYOLO(
         /* finish initialization */
         newdata.bbox = newRoi;
         newdata.classIndex = newClass;
+        newdata.scores = newScore;
         newdata.frame = frame;
         newdata.frameIndex = frameIndex;
     }

@@ -28,7 +28,6 @@ void MOT::main()
 
     while (true) // continue until finish
     {
-
         if (!q_finish_mot.empty()){
 			q_finish_tracking.push(true);
 			q_finish_yolo.push(true);
@@ -58,15 +57,16 @@ void MOT::main()
             if (count_yolo >= 5) {
                 rois = yolo2mot.rois;
                 labels = yolo2mot.labels;
+                scores = yolo2mot.scores;
                 frameYolo = yolo2mot.frame;
                 frameIndex = yolo2mot.frameIndex;
 
                 //postprocess
                 //split detections into left and right.
                 //initialize
-                roi_left.clear(); roi_right.clear(); class_left.clear(); class_right.clear();
+                roi_left.clear(); roi_right.clear(); class_left.clear(); class_right.clear(); scores_left.clear(); scores_right.clear();
                 //classify data.
-                YOLODetect_batch::roiSetting(rois, labels, roi_left, class_left, roi_right, class_right); //separate detection into left and right
+                YOLODetect_batch::roiSetting(rois, labels, roi_left, class_left, roi_right, class_right, scores_left, scores_right); //separate detection into left and right
             }
 
             if (!roi_right.empty() || !roi_left.empty())//Either left or right is not empty.
@@ -74,8 +74,8 @@ void MOT::main()
                 //left
                 counterNextIteration = 0; //reset counterNextIteration
                 std::vector<int> index_delete_left, index_delete_right;
-                YOLODetect_batch::cvtToTrackersYOLO(roi_left, class_left, frameIndex, frameYolo, trackersYOLO_left);
-                YOLODetect_batch::cvtToTrackersYOLO(roi_right, class_right, frameIndex, frameYolo, trackersYOLO_right);
+                YOLODetect_batch::cvtToTrackersYOLO(roi_left, class_left,scores_left, frameIndex, frameYolo, trackersYOLO_left);
+                YOLODetect_batch::cvtToTrackersYOLO(roi_right, class_right,scores_right, frameIndex, frameYolo, trackersYOLO_right);
 			}
 		}
 
@@ -90,8 +90,6 @@ void MOT::main()
 			organize(newdata_right, false, seqData_right, kfData_right,
 				kalmanVector_right, extrapolation_right, saveData_right, saveKFData_right, index_delete_right, q_seq2tri_right);
 			//thread_organize_left.join(); //wait for left data to finish
-			//std::cout << "mot-3" << std::endl;
-			//std::cout << "1" << std::endl;
 			//procedure to make data_3d.size() corresponding to seqData_left.size().
 			//initialize data_3d for its size to correspond to the seqData_left.size().
 			if (!seqData_left.empty() && data_3d.empty()) {//initial

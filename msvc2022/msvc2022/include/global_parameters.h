@@ -16,73 +16,79 @@ extern const int BALL;
 extern const int BOX;
 
 
-class GP{
-private:
-    // Model parameter settings as public member variables for global access via GP instance.
+class GP {
 public:
-    bool boolGroundTruth = false;
+    // Model parameter settings as static member variables for global access via GP::member
+    static inline bool boolGroundTruth = false;
     // video path
-    std::string path_to_video_left = "left.mp4";
-    std::string path_to_video_right = "right.mp4";
+    static inline std::string path_to_video_left = "left.mp4";
+    static inline std::string path_to_video_right = "right.mp4";
     // save directory
-    std::string save_directory;
+    static inline std::string save_directory;
     // camera: constant setting
-    int FPS = 300;
+    static inline int FPS = 300;
     // tracker
-    double threshold_mosse = 5.0; // PSR threshold
-    bool bool_skip = false;
+    static inline double threshold_mosse = 5.0; // PSR threshold
+    static inline bool bool_skip = false;
 
     // Tracker setting
-    int COUNTER_VALID = 5; // frames by official tracker
-    int COUNTER_LOST = 50; // frames by deleting tracker
+    static inline int COUNTER_VALID = 5; // frames by official tracker
+    static inline int COUNTER_LOST = 50; // frames by deleting tracker
+	static inline double process_noise_pos = 1e-4;
+	static inline double process_noise_vel = 1e-4;
+	static inline double process_noise_acc = 1e-4;
+	static inline double measurement_noise = 1e4;
     // Identity setting
-    double MIN_IOU = 0.1; // minimum IoU for identity
-    double MAX_RMSE = 30; // max RMSE for identity
+    static inline double MIN_IOU = 0.1; // minimum IoU for identity
+    static inline double MAX_RMSE = 30; // max RMSE for identity
 
-	void _loadParameter(std::string parameterFile){
-		//load parameter from .txt file and set the parameter as the class member.
-		std::ifstream file(parameterFile);
-		std::string line;
-		while (std::getline(file, line))
-		{
-			std::istringstream iss(line);
-			std::string key, value;
-			iss >> key >> value;
-			if (key == "PI") PI = std::stod(value);
-			else if (key == "FPS") FPS = std::stoi(value);
-			else if (key == "psr_threshold_mosse") psr_threshold_mosse = std::stod(value);
-			else if (key == "score_threshold_template_matching") score_threshold_template_matching = std::stod(value);
-			else if (key == "K_SIGMA") K_SIGMA = std::stod(value);
-			else if (key == "N_WARMUP") N_WARMUP = std::stoi(value);
-			else if (key == "MAX_SKIP") MAX_SKIP = std::stoi(value);
-			else if (key == "bool_skip") bool_skip = std::stod(value);
-			else if (key == "COUNTER_VALID") COUNTER_VALID = std::stoi(value);
-			else if (key == "COUNTER_LOST") COUNTER_LOST = std::stoi(value);
-			else if (key == "MIN_IOU") MIN_IOU = std::stod(value);
-			else if (key == "MAX_RMSE") MAX_RMSE = std::stod(value);
-			else if (key == "boolGroundTruth") boolGroundTruth = std::stod(value);
-			else if (key == "path_to_video_left") path_to_video_left = value;
-			else if (key == "path_to_video_right") path_to_video_right = value;
-			//_mode_duplication.
-			//0: no duplication, 1: duplication with IoU, 2: duplication with IoU and velocity.
-			//3: duplication with IoU and velocity, and augmentation in merging trackers.
-			else if (key == "mode_duplication") mode_duplication = std::stoi(value);
-			else if (key == "bool_TBD") bool_TBD = std::stod(value);
-		}
-		file.close();
-	}
+    // If you have additional parameters, add them as static inline as well.
 
-public:
-	GP(std::string parameterFile_main, std::string parameterFile_mot, std::string parameterFile_skeleton, std::string parameterFile_calibration)
-	{
-		//load parameter from .txt file and set the parameter as the class member.
-		_loadParameter(parameterFile_main);
-		_loadParameter(parameterFile_mot);
-		_loadParameter(parameterFile_skeleton);
-		_loadParameter(parameterFile_calibration);
-	}
-	~GP(){}
+    static void _loadParameter(const std::string& parameterFile) {
+        //load parameter from .txt file and set the parameter as the class member.
+        std::ifstream file(parameterFile);
+        std::string line;
+        while (std::getline(file, line))
+        {
+            std::istringstream iss(line);
+            std::string key, value;
+            iss >> key >> value;
+            if (key == "PI") PI = std::stod(value);
+            else if (key == "FPS") FPS = std::stoi(value);
+            else if (key == "psr_threshold_mosse") threshold_mosse = std::stod(value);
+            else if (key == "score_threshold_template_matching") score_threshold_template_matching = std::stod(value);
+            else if (key == "K_SIGMA") K_SIGMA = std::stod(value);
+            else if (key == "N_WARMUP") N_WARMUP = std::stoi(value);
+            else if (key == "MAX_SKIP") MAX_SKIP = std::stoi(value);
+            else if (key == "bool_skip") bool_skip = std::stod(value);
+            else if (key == "COUNTER_VALID") COUNTER_VALID = std::stoi(value);
+            else if (key == "COUNTER_LOST") COUNTER_LOST = std::stoi(value);
+			else if (key == "process_noise_pos") process_noise_pos = std::stod(value);
+			else if (key == "process_noise_vel") process_noise_vel = std::stod(value);
+			else if (key == "process_noise_acc") process_noise_acc = std::stod(value);
+			else if (key == "measurement_noise") measurement_noise = std::stod(value);
+            else if (key == "MIN_IOU") MIN_IOU = std::stod(value);
+            else if (key == "MAX_RMSE") MAX_RMSE = std::stod(value);
+            else if (key == "boolGroundTruth") boolGroundTruth = std::stod(value);
+            else if (key == "path_to_video_left") path_to_video_left = value;
+            else if (key == "path_to_video_right") path_to_video_right = value;
+            // _mode_duplication.
+            // 0: no duplication, 1: duplication with IoU, 2: duplication with IoU and velocity.
+            // 3: duplication with IoU and velocity, and augmentation in merging trackers.
+            else if (key == "mode_duplication") mode_duplication = std::stoi(value);
+            else if (key == "bool_TBD") bool_TBD = std::stod(value);
+        }
+        file.close();
+    }
 
+    // Static initialization function to load parameters from multiple files
+    static void initialize(const std::string& parameterFile_main, const std::string& parameterFile_mot, const std::string& parameterFile_skeleton, const std::string& parameterFile_calibration)
+    {
+        _loadParameter(parameterFile_main);
+        _loadParameter(parameterFile_mot);
+        _loadParameter(parameterFile_skeleton);
+        _loadParameter(parameterFile_calibration);
+    }
 };
 
 
