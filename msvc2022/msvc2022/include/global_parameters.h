@@ -30,6 +30,7 @@ public:
     // tracker
     static inline double threshold_mosse = 5.0; // PSR threshold
     static inline bool bool_skip = false;
+	static inline unsigned int _n_highspeed = 10;
 
     // Tracker setting
     static inline int COUNTER_VALID = 5; // frames by official tracker
@@ -61,6 +62,7 @@ public:
             else if (key == "N_WARMUP") N_WARMUP = std::stoi(value);
             else if (key == "MAX_SKIP") MAX_SKIP = std::stoi(value);
             else if (key == "bool_skip") bool_skip = std::stod(value);
+            else if (key == "n_highspeed") _n_highspeed = std::stoi(value);
             else if (key == "COUNTER_VALID") COUNTER_VALID = std::stoi(value);
             else if (key == "COUNTER_LOST") COUNTER_LOST = std::stoi(value);
 			else if (key == "process_noise_pos") process_noise_pos = std::stod(value);

@@ -70,7 +70,8 @@ public:
 	*/
 	static void mergeTracking_MOT(
 		Trackers2MOT& trackers2mot,
-		TrackersMOT& trackersMOT
+		TrackersMOT& trackersMOT,
+		std::vector<int>& success_flags
 	);
 	/**
 	* @brief match trackers.
